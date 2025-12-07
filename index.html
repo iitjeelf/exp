@@ -268,6 +268,14 @@
             border-radius: 8px;
         }
         
+        .btn-recovery {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            margin: 0;
+            border-radius: 8px;
+        }
+        
         /* Status Messages */
         .status-message {
             padding: 14px;
@@ -619,7 +627,7 @@
         
         /* Touch-friendly Improvements */
         @media (hover: none) and (pointer: coarse) {
-            .btn, .quick-btn, .btn-secondary, .btn-small {
+            .btn, .quick-btn, .btn-secondary, .btn-small, .btn-recovery {
                 min-height: 44px;
                 padding: 12px;
             }
@@ -633,15 +641,6 @@
                 min-height: 36px;
                 min-width: 60px;
             }
-        }
-        
-        /* Hidden Google Sheets Sync Button */
-        .hidden-sync-btn {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-            height: 0;
-            width: 0;
         }
     </style>
 </head>
@@ -658,7 +657,7 @@
     
     <div class="container">
         <h1>💰 Monthly Expense Tracker</h1>
-        <p class="subtitle">Connected to Google Sheets</p>
+        <p class="subtitle">Data can be recovered after clearing</p>
         
         <!-- Quick Actions -->
         <div class="quick-actions">
@@ -703,9 +702,8 @@
                     <button type="button" class="btn-secondary" onclick="exportToCSV()">
                         📊 Export CSV
                     </button>
-                    <!-- Hidden sync button - will auto-sync on load -->
-                    <button type="button" class="btn-secondary hidden-sync-btn" id="autoSyncBtn">
-                        🔄 Auto Sync
+                    <button type="button" class="btn-secondary" onclick="loadFromGoogleSheets()" id="refreshBtn">
+                        🔄 Get Data Back
                     </button>
                 </div>
             </div>
@@ -794,6 +792,7 @@
                 <span>Sync Status:</span>
                 <span id="connectionStatus" class="connection-status connected">🟢 Connected</span>
                 <span class="sync-indicator sync-complete"></span>
+                <span id="lastSyncTime" style="font-size: 0.75rem; color: #666;">Never synced</span>
             </div>
         </div>
         
@@ -802,10 +801,10 @@
             <div class="section-header">
                 <h3>Expense History</h3>
                 <div class="filter-controls">
-                    <select id="monthFilter" onchange="filterByMonth()">
+                    <select id="monthFilter" onchange="applyFilters()">
                         <option value="">All Months</option>
                     </select>
-                    <select id="categoryFilter" onchange="filterByCategory()">
+                    <select id="categoryFilter" onchange="applyFilters()">
                         <option value="">All Categories</option>
                         <option value="Food & Dining">🍔 Food & Dining</option>
                         <option value="Transportation">🚗 Transportation</option>
@@ -827,8 +826,13 @@
                         <option value="Milk Bill">Milk Bill</option>
                         <option value="OTHER">OTHER</option>
                     </select>
-                    <button class="btn-small" onclick="clearFilters()">Clear</button>
-                    <button class="btn-small" onclick="clearAllData()" style="background: #ef4444;">🗑️ Clear All</button>
+                    <button class="btn-small" onclick="clearFilters()">Clear Filters</button>
+                    <button class="btn-recovery" onclick="recoverData()" id="recoverBtn" style="display: none;">
+                        🔄 Recover Data
+                    </button>
+                    <button class="btn-small" onclick="clearAllData()" style="background: #ef4444;">
+                        🗑️ Clear Local Data
+                    </button>
                 </div>
             </div>
             
@@ -856,9 +860,9 @@
         
         <!-- Info Section -->
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 0.85rem;">
-            <p>✅ Connected to Google Sheets | 💾 Works offline | 📱 Mobile-friendly</p>
+            <p>✅ Data recovery enabled | 🔄 Get data back anytime | 💾 Works offline</p>
             <p style="margin-top: 5px; color: #10b981; font-weight: 600;">
-                Data automatically syncs with Google Sheets
+                If you clear data by mistake, click "Get Data Back" to reload from Google Sheets
             </p>
         </div>
     </div>
@@ -868,14 +872,14 @@
         <button class="mobile-action-btn" onclick="scrollToForm()">
             📝 Add Expense
         </button>
-        <button class="mobile-action-btn" onclick="exportToCSV()">
-            📊 Export CSV
+        <button class="mobile-action-btn" onclick="loadFromGoogleSheets()">
+            🔄 Get Data Back
         </button>
     </div>
 
     <script>
         // ============================================
-        // CONFIGURATION - HARDCODED WITH YOUR SHEET URL
+        // CONFIGURATION
         // ============================================
         const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/formResponse';
         
@@ -887,13 +891,15 @@
             paymentMethod: 'entry.1579942531'
         };
         
-        // YOUR GOOGLE SHEET URL HARDCODED
-        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/10kSXj24kvNW-nF4a7EwLXEpVvSwfJJ0y1c5b4Pxk8y4/edit?usp=sharing';
+        // YOUR GOOGLE SHEET URL
         const GOOGLE_SHEET_ID = '10kSXj24kvNW-nF4a7EwLXEpVvSwfJJ0y1c5b4Pxk8y4';
         
         let expenses = [];
         let pendingSyncQueue = [];
         let isOnline = true;
+        let currentFilteredExpenses = [];
+        let lastClearTime = null;
+        let dataCleared = false;
         
         // ============================================
         // INITIALIZATION
@@ -914,24 +920,261 @@
             setTimeout(() => {
                 loadFromGoogleSheets();
             }, 1000);
+            
+            // Check if data was recently cleared
+            checkForRecovery();
         });
         
         function loadFromLocalStorage() {
             try {
                 const saved = localStorage.getItem('expenses');
                 expenses = saved ? JSON.parse(saved) : [];
+                currentFilteredExpenses = [...expenses];
                 
                 const savedQueue = localStorage.getItem('pendingSyncQueue');
                 pendingSyncQueue = savedQueue ? JSON.parse(savedQueue) : [];
+                
+                const savedClearTime = localStorage.getItem('lastClearTime');
+                lastClearTime = savedClearTime ? parseInt(savedClearTime) : null;
                 
                 console.log(`Loaded ${expenses.length} expenses from localStorage`);
             } catch (error) {
                 console.error('Error loading from localStorage:', error);
                 expenses = [];
+                currentFilteredExpenses = [];
                 pendingSyncQueue = [];
             }
         }
         
+        function checkForRecovery() {
+            // Show recovery button if data was recently cleared
+            if (expenses.length === 0 && isOnline) {
+                const recoverBtn = document.getElementById('recoverBtn');
+                recoverBtn.style.display = 'inline-block';
+                recoverBtn.innerHTML = '🔁 Get Data from Sheets';
+            }
+        }
+        
+        // ============================================
+        // CLEAR ALL DATA - WITH RECOVERY OPTION
+        // ============================================
+        function clearAllData() {
+            if (expenses.length === 0) {
+                showMessage('No data to clear', 'warning');
+                return;
+            }
+            
+            const count = expenses.length;
+            const totalAmount = expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+            
+            if (confirm(`⚠️ CLEAR WARNING ⚠️\n\nAre you sure you want to delete ALL ${count} expenses (Total: ${formatCurrency(totalAmount)})?\n\n✅ Your data is SAFE in Google Sheets\n✅ Click "Get Data Back" to restore anytime\n✅ This only clears local storage`)) {
+                // Save clear time
+                lastClearTime = Date.now();
+                localStorage.setItem('lastClearTime', lastClearTime.toString());
+                
+                // Clear local data
+                expenses = [];
+                currentFilteredExpenses = [];
+                localStorage.removeItem('expenses');
+                dataCleared = true;
+                
+                // Update UI
+                calculateStatistics();
+                renderExpenses();
+                populateMonthFilter();
+                
+                // Show recovery button
+                const recoverBtn = document.getElementById('recoverBtn');
+                recoverBtn.style.display = 'inline-block';
+                recoverBtn.innerHTML = `🔁 Get ${count} Expenses Back`;
+                
+                // Show success message with recovery instructions
+                showMessage(`✅ Cleared ${count} expenses from local storage. Click "Get Data Back" button to restore from Google Sheets.`, 'success');
+            }
+        }
+        
+        // ============================================
+        // RECOVER DATA FUNCTION
+        // ============================================
+        function recoverData() {
+            loadFromGoogleSheets();
+        }
+        
+        // ============================================
+        // GOOGLE SHEETS READING - GET DATA BACK
+        // ============================================
+        async function loadFromGoogleSheets() {
+            if (!GOOGLE_SHEET_ID) {
+                showMessage('Google Sheet not configured', 'error');
+                return;
+            }
+            
+            showLoading('Loading from Google Sheets...');
+            
+            try {
+                // Try CSV export (works for public sheets)
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Form%20Responses%201`;
+                
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                
+                // Parse CSV data
+                const rows = csvText.split('\n');
+                const sheetExpenses = [];
+                
+                // Skip header row and process data
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i].trim();
+                    if (!row) continue;
+                    
+                    // Parse CSV row
+                    const columns = parseCSVRow(row);
+                    
+                    // Your Google Form columns:
+                    // Column 0: Timestamp
+                    // Column 1: Date (entry.1057050782)
+                    // Column 2: Amount (entry.513978665)
+                    // Column 3: Category (entry.1397898536)
+                    // Column 4: Description (entry.1649295470)
+                    // Column 5: Payment Method (entry.1579942531)
+                    
+                    if (columns.length >= 6) {
+                        const expense = {
+                            date: columns[1] || '',
+                            amount: parseFloat(columns[2]) || 0,
+                            category: columns[3] || 'OTHER',
+                            description: columns[4] || '',
+                            paymentMethod: columns[5] || 'Cash',
+                            source: 'google_sheets',
+                            syncStatus: 'synced',
+                            timestamp: columns[0] || new Date().toISOString()
+                        };
+                        
+                        // Only add if it has valid data
+                        if (expense.date && expense.amount > 0) {
+                            sheetExpenses.push(expense);
+                        }
+                    }
+                }
+                
+                if (sheetExpenses.length > 0) {
+                    // Replace all data with sheet data (full refresh)
+                    expenses = sheetExpenses;
+                    currentFilteredExpenses = [...expenses];
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    
+                    // Hide recovery button
+                    document.getElementById('recoverBtn').style.display = 'none';
+                    
+                    updateLastSyncTime();
+                    showMessage(`✅ Loaded ${sheetExpenses.length} expenses from Google Sheets`, 'success');
+                    showSuccessAnimation();
+                    
+                    // Update UI
+                    calculateStatistics();
+                    renderExpenses();
+                    populateMonthFilter();
+                } else {
+                    showMessage('No data found in Google Sheets', 'warning');
+                }
+                
+            } catch (error) {
+                console.error('Error loading from Google Sheets:', error);
+                showMessage('Failed to load from Google Sheets. Make sure sheet is public.', 'error');
+            }
+            
+            hideLoading();
+        }
+        
+        function parseCSVRow(row) {
+            const columns = [];
+            let currentColumn = '';
+            let insideQuotes = false;
+            
+            for (let i = 0; i < row.length; i++) {
+                const char = row[i];
+                
+                if (char === '"') {
+                    insideQuotes = !insideQuotes;
+                } else if (char === ',' && !insideQuotes) {
+                    columns.push(currentColumn.trim());
+                    currentColumn = '';
+                } else {
+                    currentColumn += char;
+                }
+            }
+            
+            // Add the last column
+            columns.push(currentColumn.trim());
+            
+            return columns.map(col => col.replace(/^"|"$/g, ''));
+        }
+        
+        function updateLastSyncTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-IN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const dateString = now.toLocaleDateString('en-IN');
+            document.getElementById('lastSyncTime').textContent = `Last sync: ${dateString} ${timeString}`;
+        }
+        
+        // ============================================
+        // FILTERING FUNCTIONS
+        // ============================================
+        function applyFilters() {
+            const selectedMonth = document.getElementById('monthFilter').value;
+            const selectedCategory = document.getElementById('categoryFilter').value;
+            
+            // Start with all expenses
+            let filtered = [...expenses];
+            
+            // Apply month filter if selected
+            if (selectedMonth) {
+                try {
+                    const [year, month] = selectedMonth.split('-').map(Number);
+                    filtered = filtered.filter(expense => {
+                        try {
+                            const expenseDate = new Date(expense.date);
+                            return expenseDate.getMonth() === month && 
+                                   expenseDate.getFullYear() === year;
+                        } catch {
+                            return false;
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error filtering by month:", error);
+                }
+            }
+            
+            // Apply category filter if selected
+            if (selectedCategory) {
+                filtered = filtered.filter(expense => 
+                    expense.category === selectedCategory
+                );
+            }
+            
+            currentFilteredExpenses = filtered;
+            renderExpenses();
+        }
+        
+        function clearFilters() {
+            document.getElementById('monthFilter').value = '';
+            document.getElementById('categoryFilter').value = '';
+            currentFilteredExpenses = [...expenses];
+            renderExpenses();
+            showMessage('Filters cleared', 'success');
+        }
+        
+        // ============================================
+        // REST OF THE CODE (same as before)
+        // ============================================
         function checkConnection() {
             isOnline = navigator.onLine;
             updateConnectionStatus();
@@ -950,9 +1193,6 @@
             });
         }
         
-        // ============================================
-        // MOBILE FUNCTIONS
-        // ============================================
         function scrollToForm() {
             document.querySelector('.form-container').scrollIntoView({
                 behavior: 'smooth',
@@ -960,7 +1200,7 @@
             });
         }
         
-        function showLoading(message = 'Saving...') {
+        function showLoading(message = 'Loading...') {
             const overlay = document.getElementById('loadingOverlay');
             const text = document.getElementById('loadingText');
             text.textContent = message;
@@ -980,9 +1220,6 @@
             }, 2000);
         }
         
-        // ============================================
-        // UTILITY FUNCTIONS
-        // ============================================
         function formatCurrency(amount) {
             return '₹' + parseFloat(amount || 0).toLocaleString('en-IN', {
                 minimumFractionDigits: 2,
@@ -1008,9 +1245,6 @@
             return months[monthIndex] || "Month";
         }
         
-        // ============================================
-        // CONNECTION FUNCTIONS
-        // ============================================
         function updateConnectionStatus() {
             const statusElement = document.getElementById('connectionStatus');
             const indicator = document.querySelector('.sync-indicator');
@@ -1026,9 +1260,6 @@
             }
         }
         
-        // ============================================
-        // QUICK ACTIONS
-        // ============================================
         function addQuickExpense(amount, category) {
             document.getElementById('amount').value = amount;
             document.getElementById('category').value = category;
@@ -1043,9 +1274,6 @@
             }
         }
         
-        // ============================================
-        // STATISTICS CALCULATION
-        // ============================================
         function calculateStatistics() {
             try {
                 const now = new Date();
@@ -1100,14 +1328,11 @@
             }
         }
         
-        // ============================================
-        // EXPENSES TABLE RENDERING
-        // ============================================
-        function renderExpenses(filteredExpenses = expenses) {
+        function renderExpenses(expensesToRender = currentFilteredExpenses) {
             const expensesList = document.getElementById('expensesList');
             const noExpensesMessage = document.getElementById('noExpensesMessage');
             
-            if (!filteredExpenses || filteredExpenses.length === 0) {
+            if (!expensesToRender || expensesToRender.length === 0) {
                 expensesList.innerHTML = '';
                 noExpensesMessage.style.display = 'block';
                 return;
@@ -1116,7 +1341,7 @@
             noExpensesMessage.style.display = 'none';
             
             try {
-                const sortedExpenses = [...filteredExpenses].sort((a, b) => {
+                const sortedExpenses = [...expensesToRender].sort((a, b) => {
                     try {
                         return new Date(b.date) - new Date(a.date);
                     } catch {
@@ -1168,12 +1393,22 @@
             }
         }
         
-        // ============================================
-        // EXPENSE MANAGEMENT
-        // ============================================
         function deleteExpense(index) {
             if (confirm('Delete this expense?')) {
-                expenses.splice(index, 1);
+                const expenseToDelete = currentFilteredExpenses[index];
+                
+                const mainIndex = expenses.findIndex(exp => 
+                    exp.date === expenseToDelete.date &&
+                    exp.amount === expenseToDelete.amount &&
+                    exp.category === expenseToDelete.category
+                );
+                
+                if (mainIndex !== -1) {
+                    expenses.splice(mainIndex, 1);
+                }
+                
+                currentFilteredExpenses.splice(index, 1);
+                
                 localStorage.setItem('expenses', JSON.stringify(expenses));
                 calculateStatistics();
                 renderExpenses();
@@ -1183,7 +1418,7 @@
         }
         
         function editExpense(index) {
-            const expense = expenses[index];
+            const expense = currentFilteredExpenses[index];
             
             document.getElementById('expenseDate').value = expense.date;
             document.getElementById('amount').value = expense.amount;
@@ -1191,7 +1426,17 @@
             document.getElementById('description').value = expense.description || '';
             document.getElementById('paymentMethod').value = expense.paymentMethod || 'Cash';
             
-            expenses.splice(index, 1);
+            const mainIndex = expenses.findIndex(exp => 
+                exp.date === expense.date &&
+                exp.amount === expense.amount &&
+                exp.category === expense.category
+            );
+            
+            if (mainIndex !== -1) {
+                expenses.splice(mainIndex, 1);
+            }
+            currentFilteredExpenses.splice(index, 1);
+            
             localStorage.setItem('expenses', JSON.stringify(expenses));
             
             showMessage('Expense loaded for editing', 'success');
@@ -1201,22 +1446,6 @@
             scrollToForm();
         }
         
-        function clearAllData() {
-            if (confirm('Are you sure you want to delete ALL expenses? This cannot be undone.')) {
-                expenses = [];
-                pendingSyncQueue = [];
-                localStorage.removeItem('expenses');
-                localStorage.removeItem('pendingSyncQueue');
-                calculateStatistics();
-                renderExpenses();
-                populateMonthFilter();
-                showMessage('All data cleared', 'success');
-            }
-        }
-        
-        // ============================================
-        // FILTERING
-        // ============================================
         function populateMonthFilter() {
             try {
                 const monthFilter = document.getElementById('monthFilter');
@@ -1261,56 +1490,6 @@
             }
         }
         
-        function filterByMonth() {
-            const selectedValue = document.getElementById('monthFilter').value;
-            
-            if (!selectedValue) {
-                renderExpenses(expenses);
-                return;
-            }
-            
-            try {
-                const [year, month] = selectedValue.split('-').map(Number);
-                const filteredExpenses = expenses.filter(expense => {
-                    try {
-                        const expenseDate = new Date(expense.date);
-                        return expenseDate.getMonth() === month && 
-                               expenseDate.getFullYear() === year;
-                    } catch {
-                        return false;
-                    }
-                });
-                
-                renderExpenses(filteredExpenses);
-            } catch (error) {
-                console.error("Error filtering by month:", error);
-            }
-        }
-        
-        function filterByCategory() {
-            const selectedCategory = document.getElementById('categoryFilter').value;
-            
-            if (!selectedCategory) {
-                filterByMonth();
-                return;
-            }
-            
-            const filteredExpenses = expenses.filter(expense => 
-                expense.category === selectedCategory
-            );
-            
-            renderExpenses(filteredExpenses);
-        }
-        
-        function clearFilters() {
-            document.getElementById('monthFilter').value = '';
-            document.getElementById('categoryFilter').value = '';
-            renderExpenses(expenses);
-        }
-        
-        // ============================================
-        // GOOGLE SHEETS SUBMISSION
-        // ============================================
         async function submitToGoogleSheets(formData) {
             console.log('Submitting to Google Sheets:', formData);
             
@@ -1388,156 +1567,11 @@
             
             if (successfulSyncs > 0) {
                 showMessage(`✅ Synced ${successfulSyncs} expenses to Google Sheets`, 'success');
+                currentFilteredExpenses = [...expenses];
                 renderExpenses();
             }
         }
         
-        // ============================================
-        // GOOGLE SHEETS READING - AUTO LOADS WITHOUT PROMPTS
-        // ============================================
-        async function loadFromGoogleSheets() {
-            if (!GOOGLE_SHEET_ID) {
-                console.log('No Google Sheet ID configured');
-                return;
-            }
-            
-            showLoading('Syncing with Google Sheets...');
-            
-            try {
-                // Method 1: Try CSV export (works for public sheets)
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Form%20Responses%201`;
-                
-                const response = await fetch(csvUrl);
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch data: ${response.status}`);
-                }
-                
-                const csvText = await response.text();
-                
-                // Parse CSV data
-                const rows = csvText.split('\n');
-                const sheetExpenses = [];
-                
-                // Skip header row (row 0) and process data
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i].trim();
-                    if (!row) continue;
-                    
-                    // Parse CSV row
-                    const columns = parseCSVRow(row);
-                    
-                    // Your Google Form columns:
-                    // Column 0: Timestamp
-                    // Column 1: Date (entry.1057050782)
-                    // Column 2: Amount (entry.513978665)
-                    // Column 3: Category (entry.1397898536)
-                    // Column 4: Description (entry.1649295470)
-                    // Column 5: Payment Method (entry.1579942531)
-                    
-                    if (columns.length >= 6) {
-                        const expense = {
-                            date: columns[1] || '',
-                            amount: parseFloat(columns[2]) || 0,
-                            category: columns[3] || 'OTHER',
-                            description: columns[4] || '',
-                            paymentMethod: columns[5] || 'Cash',
-                            source: 'google_sheets',
-                            syncStatus: 'synced',
-                            timestamp: columns[0] || new Date().toISOString()
-                        };
-                        
-                        // Only add if it has valid data
-                        if (expense.date && expense.amount > 0) {
-                            sheetExpenses.push(expense);
-                        }
-                    }
-                }
-                
-                if (sheetExpenses.length > 0) {
-                    // Merge with existing expenses (avoid duplicates)
-                    mergeWithLocalData(sheetExpenses);
-                    console.log(`✅ Loaded ${sheetExpenses.length} expenses from Google Sheets`);
-                    
-                    // Show brief success message
-                    setTimeout(() => {
-                        showMessage(`✅ Synced ${sheetExpenses.length} expenses from Google Sheets`, 'success');
-                    }, 100);
-                    
-                    // Auto-refresh every 30 seconds when online
-                    if (isOnline) {
-                        setTimeout(loadFromGoogleSheets, 30000);
-                    }
-                } else {
-                    console.log('No new data in Google Sheets');
-                }
-                
-            } catch (error) {
-                console.error('Error loading from Google Sheets:', error);
-                // Silently fail - don't show error to user
-            }
-            
-            hideLoading();
-        }
-        
-        function parseCSVRow(row) {
-            const columns = [];
-            let currentColumn = '';
-            let insideQuotes = false;
-            
-            for (let i = 0; i < row.length; i++) {
-                const char = row[i];
-                
-                if (char === '"') {
-                    insideQuotes = !insideQuotes;
-                } else if (char === ',' && !insideQuotes) {
-                    columns.push(currentColumn.trim());
-                    currentColumn = '';
-                } else {
-                    currentColumn += char;
-                }
-            }
-            
-            // Add the last column
-            columns.push(currentColumn.trim());
-            
-            return columns.map(col => col.replace(/^"|"$/g, ''));
-        }
-        
-        function mergeWithLocalData(sheetExpenses) {
-            const localExpenses = expenses;
-            const mergedExpenses = [...localExpenses];
-            const seenIds = new Set();
-            
-            // Add local expenses to seen set
-            localExpenses.forEach(exp => {
-                const id = `${exp.date}_${exp.amount}_${exp.category}_${exp.description || ''}_${exp.paymentMethod}`;
-                seenIds.add(id);
-            });
-            
-            // Add sheets data if not already present
-            sheetExpenses.forEach(sheetExp => {
-                const id = `${sheetExp.date}_${sheetExp.amount}_${sheetExp.category}_${sheetExp.description || ''}_${sheetExp.paymentMethod}`;
-                if (!seenIds.has(id)) {
-                    mergedExpenses.push(sheetExp);
-                    seenIds.add(id);
-                }
-            });
-            
-            // Update expenses
-            expenses = mergedExpenses;
-            localStorage.setItem('expenses', JSON.stringify(expenses));
-            
-            // Update UI
-            calculateStatistics();
-            renderExpenses();
-            populateMonthFilter();
-            
-            console.log(`Merged data: ${localExpenses.length} local + ${sheetExpenses.length} sheets = ${expenses.length} total`);
-        }
-        
-        // ============================================
-        // FORM SUBMISSION
-        // ============================================
         document.getElementById('expenseForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1577,6 +1611,7 @@
                 };
                 
                 expenses.unshift(newExpense);
+                currentFilteredExpenses = [...expenses];
                 localStorage.setItem('expenses', JSON.stringify(expenses));
                 
                 const submitted = await submitToGoogleSheets(formData);
@@ -1618,15 +1653,11 @@
                 setTimeout(syncPendingExpenses, 2000);
             }
             
-            // Auto-refresh from Google Sheets after saving
             if (isOnline) {
                 setTimeout(loadFromGoogleSheets, 3000);
             }
         });
         
-        // ============================================
-        // EXPORT FUNCTION
-        // ============================================
         function exportToCSV() {
             if (expenses.length === 0) {
                 showMessage('No expenses to export', 'error');
@@ -1664,9 +1695,6 @@
             }
         }
         
-        // ============================================
-        // HELPER FUNCTIONS
-        // ============================================
         function showMessage(message, type) {
             const statusMessage = document.getElementById('statusMessage');
             statusMessage.textContent = message;
@@ -1680,15 +1708,12 @@
             }
         }
         
-        // ============================================
-        // INITIALIZATION
-        // ============================================
         function initApp() {
             calculateStatistics();
+            currentFilteredExpenses = [...expenses];
             renderExpenses();
             populateMonthFilter();
-            console.log('✅ Expense Tracker initialized with Google Sheets integration');
-            console.log('📊 Google Sheet ID:', GOOGLE_SHEET_ID);
+            console.log('✅ Expense Tracker initialized with data recovery');
         }
     </script>
 </body>

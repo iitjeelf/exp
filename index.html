@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Expense Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        
+        /* Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        
+        .stat-card.current-month { border-left-color: #10b981; }
+        .stat-card.previous-month { border-left-color: #8b5cf6; }
+        .stat-card.daily-avg { border-left-color: #f59e0b; }
+        .stat-card.remaining-days { border-left-color: #ef4444; }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-card .amount {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stat-card .period {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        /* Form */
+        .form-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .form-header h3 {
+            color: #444;
+            margin: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .currency-input {
+            position: relative;
+        }
+        
+        .currency-symbol {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #667eea;
+            z-index: 1;
+        }
+        
+        .currency-input input {
+            padding-left: 40px;
+        }
+        
+        /* Buttons */
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 12px 24px;
+            font-size: 0.9rem;
+            width: auto;
+        }
+        
+        .btn-small {
+            background: #6b7280;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+        
+        /* Status Messages */
+        .status-message {
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Expenses Table */
+        .expenses-section {
+            margin-top: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .section-header h3 {
+            color: #444;
+            margin: 0;
+        }
+        
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .filter-controls select {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            width: auto;
+        }
+        
+        .expenses-table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+            margin-top: 10px;
+        }
+        
+        .expenses-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+        
+        .expenses-table th {
+            background: #f8f9fa;
+            padding: 14px 12px;
+            text-align: left;
+            color: #666;
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .expenses-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f1f3f4;
+        }
+        
+        .expenses-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .category-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+        
+        .category-food { background: #e3f2fd; color: #1976d2; }
+        .category-transport { background: #f3e5f5; color: #7b1fa2; }
+        .category-shopping { background: #e8f5e9; color: #388e3c; }
+        .category-bills { background: #fff3e0; color: #f57c00; }
+        .category-entertainment { background: #ffeef8; color: #d81b60; }
+        .category-healthcare { background: #e8f4fd; color: #0d6efd; }
+        .category-education { background: #f0f9ff; color: #0ea5e9; }
+        .category-other { background: #f5f5f5; color: #616161; }
+        
+        .amount-cell {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #667eea;
+        }
+        
+        .date-cell {
+            color: #666;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        
+        .no-expenses {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+        
+        .total-row {
+            background: #f8f9fa;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .total-row td {
+            padding-top: 16px;
+            padding-bottom: 16px;
+            border-top: 2px solid #dee2e6;
+        }
+        
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .quick-btn {
+            flex: 1;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .quick-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        /* Debug Panel */
+        .debug-panel {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            font-family: monospace;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .debug-toggle {
+            background: #475569;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Monthly Expense Tracker</h1>
+        <p class="subtitle">Track and analyze your monthly expenditures</p>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="addQuickExpense(500, 'Food & Dining')">Food ₹500</button>
+            <button class="quick-btn" onclick="addQuickExpense(200, 'Transportation')">Transport ₹200</button>
+            <button class="quick-btn" onclick="addQuickExpense(1000, 'Shopping')">Shopping ₹1k</button>
+            <button class="quick-btn" onclick="addQuickExpense(3000, 'Bills & Utilities')">Bills ₹3k</button>
+        </div>
+        
+        <!-- Statistics Dashboard -->
+        <div class="dashboard">
+            <div class="stat-card current-month">
+                <h3>This Month</h3>
+                <div class="amount" id="currentMonthTotal">₹0</div>
+                <div class="period" id="currentMonthPeriod"></div>
+            </div>
+            
+            <div class="stat-card previous-month">
+                <h3>Previous Month</h3>
+                <div class="amount" id="previousMonthTotal">₹0</div>
+                <div class="period" id="previousMonthPeriod"></div>
+            </div>
+            
+            <div class="stat-card daily-avg">
+                <h3>Daily Average</h3>
+                <div class="amount" id="dailyAverage">₹0</div>
+                <div class="period">This Month</div>
+            </div>
+            
+            <div class="stat-card remaining-days">
+                <h3>Remaining Days</h3>
+                <div class="amount" id="remainingDays">0</div>
+                <div class="period">Days left in month</div>
+            </div>
+        </div>
+        
+        <!-- Add Expense Form -->
+        <div class="form-container">
+            <div class="form-header">
+                <h3>Add New Expense</h3>
+                <div>
+                    <button type="button" class="btn-secondary" onclick="loadFromGoogleSheets()">
+                        ↻ Load from Sheets
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="testConnection()" style="margin-left: 10px;">
+                        🔍 Test Connection
+                    </button>
+                </div>
+            </div>
+            
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label for="expenseDate">Date</label>
+                    <input 
+                        type="date" 
+                        id="expenseDate" 
+                        name="date"
+                        required
+                    >
+                </div>
+                
+                <div class="form-group currency-input">
+                    <label for="amount">Amount (₹)</label>
+                    <span class="currency-symbol">₹</span>
+                    <input 
+                        type="number" 
+                        id="amount" 
+                        name="amount" 
+                        placeholder="0.00" 
+                        step="0.01" 
+                        min="0"
+                        required
+                        inputmode="decimal"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" name="category" required>
+                        <option value="">Select a category</option>
+                        <option value="Food & Dining">🍔 Food & Dining</option>
+                        <option value="Transportation">🚗 Transportation</option>
+                        <option value="Shopping">🛍️ Shopping</option>
+                        <option value="Bills & Utilities">💡 Bills & Utilities</option>
+                        <option value="Entertainment">🎬 Entertainment</option>
+                        <option value="Healthcare">🏥 Healthcare</option>
+                        <option value="Education">📚 Education</option>
+                        <option value="Other">📦 Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description (Optional)</label>
+                    <input 
+                        type="text" 
+                        id="description" 
+                        name="description" 
+                        placeholder="What was this for?"
+                    >
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method</label>
+                    <select id="paymentMethod" name="paymentMethod">
+                        <option value="Cash">💵 Cash</option>
+                        <option value="Credit Card">💳 Credit Card</option>
+                        <option value="Debit Card">🏦 Debit Card</option>
+                        <option value="UPI">📱 UPI</option>
+                        <option value="Net Banking">🌐 Net Banking</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    💾 Save Expense to Google Sheets
+                </button>
+            </form>
+            
+            <div id="statusMessage" class="status-message"></div>
+            
+            <div style="margin-top: 15px; text-align: center;">
+                <span>Connection: </span>
+                <span id="connectionStatus" class="connection-status disconnected">Checking...</span>
+                <span style="margin-left: 15px;">Last sync: </span>
+                <span id="lastSyncTime" style="color: #666;">Never</span>
+            </div>
+            
+            <!-- Debug Panel -->
+            <button class="debug-toggle" onclick="toggleDebug()">Show Debug Log</button>
+            <div class="debug-panel" id="debugPanel">
+                <div id="debugContent">Debug logs will appear here...</div>
+            </div>
+        </div>
+        
+        <!-- Expense List -->
+        <div class="expenses-section">
+            <div class="section-header">
+                <h3>Expense History</h3>
+                <div class="filter-controls">
+                    <select id="monthFilter" onchange="filterByMonth()">
+                        <option value="">All Months</option>
+                    </select>
+                    <select id="categoryFilter" onchange="filterByCategory()">
+                        <option value="">All Categories</option>
+                        <option value="Food & Dining">Food & Dining</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Bills & Utilities">Bills & Utilities</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <button class="btn-small" onclick="clearFilters()">Clear Filters</button>
+                </div>
+            </div>
+            
+            <div class="expenses-table-container">
+                <table class="expenses-table" id="expensesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Payment</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expensesList">
+                        <!-- Expenses will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="noExpensesMessage" class="no-expenses" style="display: none;">
+                No expenses recorded yet. Start by adding your first expense above!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-OOh4q_CY1Lw2oTnABym8iWxRG436uKYdueIkdwwb0n8za3TgF1QcnsyQf6t_MyokeQ/exec";
+        
+        let expenses = [];
+        let isOnline = navigator.onLine;
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseDate').value = today;
+            
+            // Update connection status
+            updateConnectionStatus();
+            
+            // Listen for online/offline
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+            
+            // Initialize app
+            initApp();
+            
+            // Test connection
+            setTimeout(testConnection, 1000);
+        });
+        
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+        function formatCurrency(amount) {
+            return '₹' + parseFloat(amount || 0).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        function formatDate(dateString) {
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
+            } catch {
+                return dateString;
+            }
+        }
+        
+        function getMonthName(monthIndex) {
+            const months = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ];
+            return months[monthIndex] || "Month";
+        }
+        
+        // ============================================
+        // DEBUG FUNCTIONS
+        // ============================================
+        function logDebug(message) {
+            const debugContent = document.getElementById('debugContent');
+            const timestamp = new Date().toLocaleTimeString();
+            debugContent.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            debugContent.scrollTop = debugContent.scrollHeight;
+            console.log(message);
+        }
+        
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+        
+        // ============================================
+        // QUICK ACTIONS
+        // ============================================
+        function addQuickExpense(amount, category) {
+            document.getElementById('amount').value = amount;
+            document.getElementById('category').value = category;
+            document.getElementById('description').focus();
+            showMessage(`Quick expense preset: ${category} - ₹${amount}`, 'success');
+        }
+        
+        // ============================================
+        // CONNECTION FUNCTIONS
+        // ============================================
+        function updateConnectionStatus() {
+            isOnline = navigator.onLine;
+            const statusElement = document.getElementById('connectionStatus');
+            
+            if (isOnline) {
+                statusElement.textContent = '🟢 Online';
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.textContent = '🔴 Offline';
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+        
+        async function testConnection() {
+            logDebug("Testing connection to Google Sheets...");
+            
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                const result = await response.json();
+                
+                logDebug("Connection test response: " + JSON.stringify(result));
+                
+                if (result.success) {
+                    updateConnectionStatus();
+                    showMessage('✅ Connected to Google Sheets!', 'success');
+                    return true;
+                } else {
+                    showMessage('⚠️ Google Sheets error: ' + result.message, 'error');
+                    return false;
+                }
+            } catch (error) {
+                logDebug("Connection test failed: " + error);
+                showMessage('❌ Cannot connect to Google Sheets', 'error');
+                return false;
+            }
+        }
+        
+        // ============================================
+        // STATISTICS CALCULATION
+        // ============================================
+        function calculateStatistics() {
+            try {
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                
+                // Current month expenses
+                const currentMonthExpenses = expenses.filter(expense => {
+                    try {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getMonth() === currentMonth && 
+                               expenseDate.getFullYear() === currentYear;
+                    } catch {
+                        return false;
+                    }
+                });
+                
+                // Previous month expenses
+                const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+                const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+                const previousMonthExpenses = expenses.filter(expense => {
+                    try {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getMonth() === prevMonth && 
+                               expenseDate.getFullYear() === prevYear;
+                    } catch {
+                        return false;
+                    }
+                });
+                
+                // Calculate totals
+                const currentMonthTotal = currentMonthExpenses.reduce((sum, expense) => 
+                    sum + (parseFloat(expense.amount) || 0), 0);
+                const previousMonthTotal = previousMonthExpenses.reduce((sum, expense) => 
+                    sum + (parseFloat(expense.amount) || 0), 0);
+                
+                // Calculate daily average
+                const daysPassed = now.getDate();
+                const dailyAverage = daysPassed > 0 ? currentMonthTotal / daysPassed : 0;
+                
+                // Calculate remaining days
+                const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+                const remainingDays = Math.max(0, lastDay - now.getDate());
+                
+                // Update UI
+                document.getElementById('currentMonthTotal').textContent = formatCurrency(currentMonthTotal);
+                document.getElementById('previousMonthTotal').textContent = formatCurrency(previousMonthTotal);
+                document.getElementById('dailyAverage').textContent = formatCurrency(dailyAverage);
+                document.getElementById('remainingDays').textContent = remainingDays;
+                
+                // Update period labels
+                document.getElementById('currentMonthPeriod').textContent = 
+                    `${getMonthName(currentMonth)} ${currentYear}`;
+                document.getElementById('previousMonthPeriod').textContent = 
+                    `${getMonthName(prevMonth)} ${prevYear}`;
+                    
+            } catch (error) {
+                logDebug("Error calculating statistics: " + error);
+            }
+        }
+        
+        // ============================================
+        // EXPENSES TABLE RENDERING
+        // ============================================
+        function renderExpenses(filteredExpenses = expenses) {
+            const expensesList = document.getElementById('expensesList');
+            const noExpensesMessage = document.getElementById('noExpensesMessage');
+            
+            if (!filteredExpenses || filteredExpenses.length === 0) {
+                expensesList.innerHTML = '';
+                noExpensesMessage.style.display = 'block';
+                return;
+            }
+            
+            noExpensesMessage.style.display = 'none';
+            
+            try {
+                // Sort by date (most recent first)
+                const sortedExpenses = [...filteredExpenses].sort((a, b) => {
+                    try {
+                        return new Date(b.date) - new Date(a.date);
+                    } catch {
+                        return 0;
+                    }
+                });
+                
+                let html = '';
+                let total = 0;
+                
+                sortedExpenses.forEach(expense => {
+                    const amount = parseFloat(expense.amount) || 0;
+                    total += amount;
+                    
+                    // Get category class
+                    const categoryClass = 'category-' + (expense.category || 'other').toLowerCase().replace(/ & /g, '-').split(' ')[0];
+                    const categoryName = expense.category || 'Other';
+                    
+                    html += `
+                        <tr>
+                            <td class="date-cell">${formatDate(expense.date)}</td>
+                            <td><span class="category-badge ${categoryClass}">${categoryName}</span></td>
+                            <td>${expense.description || '-'}</td>
+                            <td>${expense.payment || expense.paymentMethod || 'Cash'}</td>
+                            <td class="amount-cell">${formatCurrency(amount)}</td>
+                        </tr>
+                    `;
+                });
+                
+                // Add total row
+                if (sortedExpenses.length > 0) {
+                    html += `
+                        <tr class="total-row">
+                            <td colspan="4" style="text-align: right;">Total:</td>
+                            <td>${formatCurrency(total)}</td>
+                        </tr>
+                    `;
+                }
+                
+                expensesList.innerHTML = html;
+            } catch (error) {
+                logDebug("Error rendering expenses: " + error);
+                expensesList.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">Error displaying expenses</td></tr>';
+            }
+        }
+        
+        // ============================================
+        // FILTERING
+        // ============================================
+        function populateMonthFilter() {
+            try {
+                const monthFilter = document.getElementById('monthFilter');
+                const uniqueMonths = new Set();
+                
+                expenses.forEach(expense => {
+                    try {
+                        const date = new Date(expense.date);
+                        const monthYear = `${date.getFullYear()}-${date.getMonth()}`;
+                        const monthName = getMonthName(date.getMonth());
+                        uniqueMonths.add({
+                            month: date.getMonth(),
+                            monthName: monthName,
+                            year: date.getFullYear(),
+                            key: monthYear
+                        });
+                    } catch {
+                        // Skip invalid dates
+                    }
+                });
+                
+                // Sort by date (most recent first)
+                const sortedMonths = Array.from(uniqueMonths).sort((a, b) => {
+                    if (a.year !== b.year) return b.year - a.year;
+                    return b.month - a.month;
+                });
+                
+                // Clear existing options
+                monthFilter.innerHTML = '<option value="">All Months</option>';
+                
+                // Add month options
+                sortedMonths.forEach(m => {
+                    const option = document.createElement('option');
+                    option.value = m.key;
+                    option.textContent = `${m.monthName} ${m.year}`;
+                    monthFilter.appendChild(option);
+                });
+                
+                // Select current month by default
+                const currentDate = new Date();
+                const currentMonthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
+                monthFilter.value = currentMonthKey;
+                
+            } catch (error) {
+                logDebug("Error populating month filter: " + error);
+            }
+        }
+        
+        function filterByMonth() {
+            const selectedValue = document.getElementById('monthFilter').value;
+            
+            if (!selectedValue) {
+                renderExpenses(expenses);
+                return;
+            }
+            
+            try {
+                const [year, month] = selectedValue.split('-').map(Number);
+                const filteredExpenses = expenses.filter(expense => {
+                    try {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getMonth() === month && 
+                               expenseDate.getFullYear() === year;
+                    } catch {
+                        return false;
+                    }
+                });
+                
+                renderExpenses(filteredExpenses);
+            } catch (error) {
+                logDebug("Error filtering by month: " + error);
+            }
+        }
+        
+        function filterByCategory() {
+            const selectedCategory = document.getElementById('categoryFilter').value;
+            
+            if (!selectedCategory) {
+                const selectedMonth = document.getElementById('monthFilter').value;
+                if (selectedMonth) {
+                    filterByMonth();
+                } else {
+                    renderExpenses(expenses);
+                }
+                return;
+            }
+            
+            const filteredExpenses = expenses.filter(expense => 
+                expense.category === selectedCategory
+            );
+            
+            renderExpenses(filteredExpenses);
+        }
+        
+        function clearFilters() {
+            document.getElementById('monthFilter').value = '';
+            document.getElementById('categoryFilter').value = '';
+            renderExpenses(expenses);
+        }
+        
+        // ============================================
+        // GOOGLE SHEETS INTEGRATION
+        // ============================================
+        async function loadFromGoogleSheets() {
+            const loadBtn = document.querySelector('.btn-secondary');
+            const originalText = loadBtn.textContent;
+            loadBtn.disabled = true;
+            loadBtn.textContent = 'Loading...';
+            
+            try {
+                logDebug("Loading data from Google Sheets...");
+                const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getAll');
+                const result = await response.json();
+                
+                logDebug("Load response: " + JSON.stringify(result));
+                
+                if (result.success) {
+                    expenses = result.data || [];
+                    
+                    // Save to localStorage as backup
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    
+                    // Update UI
+                    calculateStatistics();
+                    renderExpenses();
+                    populateMonthFilter();
+                    
+                    // Update sync time
+                    const now = new Date();
+                    document.getElementById('lastSyncTime').textContent = 
+                        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    showMessage(`✅ Loaded ${expenses.length} expenses from Google Sheets`, 'success');
+                } else {
+                    showMessage('Error loading data: ' + result.message, 'error');
+                }
+            } catch (error) {
+                logDebug("Error loading from Google Sheets: " + error);
+                showMessage('Failed to load from Google Sheets', 'error');
+                
+                // Fallback to localStorage
+                const saved = localStorage.getItem('expenses');
+                if (saved) {
+                    expenses = JSON.parse(saved);
+                    calculateStatistics();
+                    renderExpenses();
+                    populateMonthFilter();
+                }
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.textContent = originalText;
+            }
+        }
+        
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            // Get form data
+            const formData = {
+                date: document.getElementById('expenseDate').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value || "",
+                paymentMethod: document.getElementById('paymentMethod').value
+            };
+            
+            // Validate amount
+            if (!formData.amount || formData.amount <= 0) {
+                showMessage('Please enter a valid amount', 'error');
+                return;
+            }
+            
+            // Validate category
+            if (!formData.category) {
+                showMessage('Please select a category', 'error');
+                return;
+            }
+            
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving to Google Sheets...';
+            
+            try {
+                logDebug("Sending to Google Sheets: " + JSON.stringify(formData));
+                
+                // Send to Google Sheets
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                logDebug("Save response: " + JSON.stringify(result));
+                
+                if (result.success) {
+                    // Add to local expenses array
+                    const newExpense = {
+                        id: Date.now(),
+                        date: formData.date,
+                        amount: formData.amount,
+                        category: formData.category,
+                        description: formData.description,
+                        paymentMethod: formData.paymentMethod
+                    };
+                    
+                    expenses.unshift(newExpense);
+                    
+                    // Save to localStorage
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    
+                    // Update UI
+                    calculateStatistics();
+                    renderExpenses();
+                    populateMonthFilter();
+                    
+                    // Update sync time
+                    const now = new Date();
+                    document.getElementById('lastSyncTime').textContent = 
+                        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    // Show success message
+                    showMessage('✅ Expense saved to Google Sheets!', 'success');
+                    
+                    // Reset form
+                    document.getElementById('amount').value = '';
+                    document.getElementById('description').value = '';
+                    document.getElementById('category').selectedIndex = 0;
+                    document.getElementById('paymentMethod').selectedIndex = 0;
+                    document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+                    
+                } else {
+                    showMessage('❌ Error: ' + result.message, 'error');
+                    saveExpenseLocally(formData);
+                }
+                
+            } catch (error) {
+                logDebug("Error saving expense: " + error);
+                showMessage('❌ Network error. Saving locally.', 'error');
+                saveExpenseLocally(formData);
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💾 Save Expense to Google Sheets';
+                
+                // Clear message after 5 seconds
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+        });
+        
+        function saveExpenseLocally(formData) {
+            const newExpense = {
+                id: Date.now(),
+                date: formData.date,
+                amount: formData.amount,
+                category: formData.category,
+                description: formData.description,
+                paymentMethod: formData.paymentMethod,
+                localOnly: true
+            };
+            
+            expenses.unshift(newExpense);
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            
+            calculateStatistics();
+            renderExpenses();
+            populateMonthFilter();
+        }
+        
+        // ============================================
+        // MESSAGE DISPLAY
+        // ============================================
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            logDebug(`${type.toUpperCase()}: ${message}`);
+        }
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function initApp() {
+            logDebug("Initializing Expense Tracker...");
+            
+            // Load from localStorage
+            try {
+                const saved = localStorage.getItem('expenses');
+                expenses = saved ? JSON.parse(saved) : [];
+                logDebug(`Loaded ${expenses.length} expenses from localStorage`);
+            } catch (error) {
+                logDebug("Error loading from localStorage: " + error);
+                expenses = [];
+            }
+            
+            // Initialize with sample data if empty
+            if (expenses.length === 0) {
+                const today = new Date().toISOString().split('T')[0];
+                expenses = [
+                    {
+                        id: 1,
+                        date: today,
+                        amount: 500,
+                        category: "Food & Dining",
+                        description: "Lunch",
+                        paymentMethod: "Cash"
+                    },
+                    {
+                        id: 2,
+                        date: today,
+                        amount: 1200,
+                        category: "Transportation",
+                        description: "Fuel",
+                        paymentMethod: "UPI"
+                    }
+                ];
+                localStorage.setItem('expenses', JSON.stringify(expenses));
+            }
+            
+            // Initialize UI
+            calculateStatistics();
+            renderExpenses();
+            populateMonthFilter();
+            
+            // Focus on amount input
+            document.getElementById('amount').focus();
+            
+            logDebug("App initialized successfully");
+        }
+    </script>
+</body>
+</html>

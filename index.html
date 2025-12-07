@@ -634,22 +634,31 @@
                 min-width: 60px;
             }
         }
+        
+        /* Hidden Google Sheets Sync Button */
+        .hidden-sync-btn {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            height: 0;
+            width: 0;
+        }
     </style>
 </head>
 <body>
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
-        <div id="loadingText">Saving to Google Sheets...</div>
+        <div id="loadingText">Loading...</div>
     </div>
     
     <div class="success-animation" id="successAnimation">
         <span>✅</span>
-        <span>Saved Successfully!</span>
+        <span>Data Loaded!</span>
     </div>
     
     <div class="container">
-        <h1>💰 Monthly Tracker</h1>
-        <p class="subtitle"></p>
+        <h1>💰 Monthly Expense Tracker</h1>
+        <p class="subtitle">Connected to Google Sheets</p>
         
         <!-- Quick Actions -->
         <div class="quick-actions">
@@ -690,9 +699,15 @@
         <div class="form-container">
             <div class="form-header">
                 <h3>Add New Expense</h3>
-                <button type="button" class="btn-secondary" onclick="exportToCSV()">
-                    📊 Export CSV
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn-secondary" onclick="exportToCSV()">
+                        📊 Export CSV
+                    </button>
+                    <!-- Hidden sync button - will auto-sync on load -->
+                    <button type="button" class="btn-secondary hidden-sync-btn" id="autoSyncBtn">
+                        🔄 Auto Sync
+                    </button>
+                </div>
             </div>
             
             <form id="expenseForm">
@@ -729,11 +744,11 @@
                         <option value="Transportation">🚗 Transportation</option>
                         <option value="Shopping">🛍️ Shopping</option>
                         <option value="EMI">EMI</option>
-                        <option value="Petrol Bill"> Petrol Bill</option>
+                        <option value="Petrol Bill">Petrol Bill</option>
                         <option value="Electricity Bill">Electricity Bill</option>
                         <option value="Water Bill">Water Bill</option>
                         <option value="Groccesory">Groccesory</option>
-                         <option value="Medicines">Medicines</option>
+                        <option value="Medicines">Medicines</option>
                         <option value="Vegatables">Vegatables</option>
                         <option value="Coconut">Coconut</option>
                         <option value="Chits">Chits</option>
@@ -743,7 +758,7 @@
                         <option value="Society">Society</option>
                         <option value="Snacks">Snacks</option>
                         <option value="Milk Bill">Milk Bill</option>
-                         <option value="OTHER">OTHER</option>
+                        <option value="OTHER">OTHER</option>
                     </select>
                 </div>
                 
@@ -796,11 +811,11 @@
                         <option value="Transportation">🚗 Transportation</option>
                         <option value="Shopping">🛍️ Shopping</option>
                         <option value="EMI">EMI</option>
-                        <option value="Petrol Bill"> Petrol Bill</option>
+                        <option value="Petrol Bill">Petrol Bill</option>
                         <option value="Electricity Bill">Electricity Bill</option>
                         <option value="Water Bill">Water Bill</option>
                         <option value="Groccesory">Groccesory</option>
-                         <option value="Medicines">Medicines</option>
+                        <option value="Medicines">Medicines</option>
                         <option value="Vegatables">Vegatables</option>
                         <option value="Coconut">Coconut</option>
                         <option value="Chits">Chits</option>
@@ -810,7 +825,7 @@
                         <option value="Society">Society</option>
                         <option value="Snacks">Snacks</option>
                         <option value="Milk Bill">Milk Bill</option>
-                         <option value="OTHER">OTHER</option>
+                        <option value="OTHER">OTHER</option>
                     </select>
                     <button class="btn-small" onclick="clearFilters()">Clear</button>
                     <button class="btn-small" onclick="clearAllData()" style="background: #ef4444;">🗑️ Clear All</button>
@@ -843,7 +858,7 @@
         <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 0.85rem;">
             <p>✅ Connected to Google Sheets | 💾 Works offline | 📱 Mobile-friendly</p>
             <p style="margin-top: 5px; color: #10b981; font-weight: 600;">
-                Your form is ready! Data saves directly to your Google Sheets.
+                Data automatically syncs with Google Sheets
             </p>
         </div>
     </div>
@@ -860,22 +875,21 @@
 
     <script>
         // ============================================
-        // CONFIGURATION - USING YOUR ACTUAL FIELD IDs!
+        // CONFIGURATION - HARDCODED WITH YOUR SHEET URL
         // ============================================
         const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/formResponse';
         
-        // From your URL: https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/viewform?usp=pp_url&entry.1057050782=1111-02-01&entry.513978665=1&entry.1397898536=Food+%26+Dining&entry.1649295470=1&entry.1579942531=Cash
-        
-        // We can see ALL your field IDs now:
         const FIELD_IDS = {
-            date: 'entry.1057050782',        // Date field
-            amount: 'entry.513978665',       // Amount field  
-            category: 'entry.1397898536',    // Category field (different from before!)
-            description: 'entry.1649295470', // Description field
-            paymentMethod: 'entry.1579942531' // Payment Method field
+            date: 'entry.1057050782',
+            amount: 'entry.513978665',
+            category: 'entry.1397898536',
+            description: 'entry.1649295470',
+            paymentMethod: 'entry.1579942531'
         };
         
-        console.log('Form Field IDs configured:', FIELD_IDS);
+        // YOUR GOOGLE SHEET URL HARDCODED
+        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/10kSXj24kvNW-nF4a7EwLXEpVvSwfJJ0y1c5b4Pxk8y4/edit?usp=sharing';
+        const GOOGLE_SHEET_ID = '10kSXj24kvNW-nF4a7EwLXEpVvSwfJJ0y1c5b4Pxk8y4';
         
         let expenses = [];
         let pendingSyncQueue = [];
@@ -885,23 +899,21 @@
         // INITIALIZATION
         // ============================================
         document.addEventListener('DOMContentLoaded', function() {
-            // Set today's date
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('expenseDate').value = today;
             
-            // Load data
             loadFromLocalStorage();
-            
-            // Initialize app
             initApp();
+            checkConnection();
             
-            // Focus on amount
             setTimeout(() => {
                 document.getElementById('amount').focus();
             }, 300);
             
-            // Check connection
-            checkConnection();
+            // Auto-load from Google Sheets on startup
+            setTimeout(() => {
+                loadFromGoogleSheets();
+            }, 1000);
         });
         
         function loadFromLocalStorage() {
@@ -913,7 +925,6 @@
                 pendingSyncQueue = savedQueue ? JSON.parse(savedQueue) : [];
                 
                 console.log(`Loaded ${expenses.length} expenses from localStorage`);
-                console.log(`${pendingSyncQueue.length} pending sync items`);
             } catch (error) {
                 console.error('Error loading from localStorage:', error);
                 expenses = [];
@@ -1041,7 +1052,6 @@
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
                 
-                // Current month expenses
                 const currentMonthExpenses = expenses.filter(expense => {
                     try {
                         const expenseDate = new Date(expense.date);
@@ -1052,7 +1062,6 @@
                     }
                 });
                 
-                // Previous month expenses
                 const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
                 const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
                 const previousMonthExpenses = expenses.filter(expense => {
@@ -1065,27 +1074,22 @@
                     }
                 });
                 
-                // Calculate totals
                 const currentMonthTotal = currentMonthExpenses.reduce((sum, expense) => 
                     sum + (parseFloat(expense.amount) || 0), 0);
                 const previousMonthTotal = previousMonthExpenses.reduce((sum, expense) => 
                     sum + (parseFloat(expense.amount) || 0), 0);
                 
-                // Calculate daily average
                 const daysPassed = now.getDate();
                 const dailyAverage = daysPassed > 0 ? currentMonthTotal / daysPassed : 0;
                 
-                // Calculate remaining days
                 const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
                 const remainingDays = Math.max(0, lastDay - now.getDate());
                 
-                // Update UI
                 document.getElementById('currentMonthTotal').textContent = formatCurrency(currentMonthTotal);
                 document.getElementById('previousMonthTotal').textContent = formatCurrency(previousMonthTotal);
                 document.getElementById('dailyAverage').textContent = formatCurrency(dailyAverage);
                 document.getElementById('remainingDays').textContent = remainingDays;
                 
-                // Update period labels
                 document.getElementById('currentMonthPeriod').textContent = 
                     `${getMonthName(currentMonth)} ${currentYear}`;
                 document.getElementById('previousMonthPeriod').textContent = 
@@ -1112,7 +1116,6 @@
             noExpensesMessage.style.display = 'none';
             
             try {
-                // Sort by date (most recent first)
                 const sortedExpenses = [...filteredExpenses].sort((a, b) => {
                     try {
                         return new Date(b.date) - new Date(a.date);
@@ -1306,13 +1309,12 @@
         }
         
         // ============================================
-        // GOOGLE SHEETS SUBMISSION - WORKING VERSION
+        // GOOGLE SHEETS SUBMISSION
         // ============================================
         async function submitToGoogleSheets(formData) {
             console.log('Submitting to Google Sheets:', formData);
             
             if (!isOnline) {
-                // Queue for offline sync
                 const pendingExpense = {
                     ...formData,
                     localId: Date.now(),
@@ -1326,10 +1328,8 @@
             }
             
             try {
-                // Create form data
                 const params = new URLSearchParams();
                 
-                // Use your actual field IDs
                 params.append(FIELD_IDS.date, formData.date);
                 params.append(FIELD_IDS.amount, formData.amount.toString());
                 params.append(FIELD_IDS.category, formData.category);
@@ -1338,7 +1338,6 @@
                 
                 console.log('Form data prepared:', Object.fromEntries(params));
                 
-                // Submit using fetch with no-cors
                 await fetch(FORM_URL, {
                     method: 'POST',
                     mode: 'no-cors',
@@ -1353,61 +1352,8 @@
                 
             } catch (error) {
                 console.error('Error submitting to Google Sheets:', error);
-                
-                // Try alternative method
-                try {
-                    return await submitViaIframe(formData);
-                } catch (iframeError) {
-                    console.error('Iframe submission also failed:', iframeError);
-                    return false;
-                }
+                return false;
             }
-        }
-        
-        function submitViaIframe(formData) {
-            return new Promise((resolve, reject) => {
-                try {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    iframe.name = 'googleFormSubmit_' + Date.now();
-                    document.body.appendChild(iframe);
-                    
-                    const form = document.createElement('form');
-                    form.target = iframe.name;
-                    form.action = FORM_URL;
-                    form.method = 'POST';
-                    
-                    // Add all fields
-                    const fields = [
-                        {name: FIELD_IDS.date, value: formData.date},
-                        {name: FIELD_IDS.amount, value: formData.amount.toString()},
-                        {name: FIELD_IDS.category, value: formData.category},
-                        {name: FIELD_IDS.description, value: formData.description || ''},
-                        {name: FIELD_IDS.paymentMethod, value: formData.paymentMethod}
-                    ];
-                    
-                    fields.forEach(field => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = field.name;
-                        input.value = field.value;
-                        form.appendChild(input);
-                    });
-                    
-                    document.body.appendChild(form);
-                    form.submit();
-                    
-                    // Cleanup and resolve
-                    setTimeout(() => {
-                        document.body.removeChild(form);
-                        document.body.removeChild(iframe);
-                        resolve(true);
-                    }, 1000);
-                    
-                } catch (error) {
-                    reject(error);
-                }
-            });
         }
         
         async function syncPendingExpenses() {
@@ -1416,7 +1362,6 @@
             showLoading('Syncing pending expenses...');
             
             let successfulSyncs = 0;
-            let failedSyncs = 0;
             
             for (let i = pendingSyncQueue.length - 1; i >= 0; i--) {
                 const expense = pendingSyncQueue[i];
@@ -1426,21 +1371,16 @@
                         pendingSyncQueue.splice(i, 1);
                         successfulSyncs++;
                         
-                        // Update main list if exists
                         const index = expenses.findIndex(e => e.localId === expense.localId);
                         if (index !== -1) {
                             expenses[index].syncStatus = 'synced';
                         }
-                    } else {
-                        failedSyncs++;
                     }
                 } catch (error) {
                     console.error('Sync error:', error);
-                    failedSyncs++;
                 }
             }
             
-            // Save updated queue
             localStorage.setItem('pendingSyncQueue', JSON.stringify(pendingSyncQueue));
             localStorage.setItem('expenses', JSON.stringify(expenses));
             
@@ -1450,10 +1390,149 @@
                 showMessage(`✅ Synced ${successfulSyncs} expenses to Google Sheets`, 'success');
                 renderExpenses();
             }
-            
-            if (failedSyncs > 0) {
-                showMessage(`⚠️ ${failedSyncs} expenses failed to sync`, 'warning');
+        }
+        
+        // ============================================
+        // GOOGLE SHEETS READING - AUTO LOADS WITHOUT PROMPTS
+        // ============================================
+        async function loadFromGoogleSheets() {
+            if (!GOOGLE_SHEET_ID) {
+                console.log('No Google Sheet ID configured');
+                return;
             }
+            
+            showLoading('Syncing with Google Sheets...');
+            
+            try {
+                // Method 1: Try CSV export (works for public sheets)
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Form%20Responses%201`;
+                
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch data: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                
+                // Parse CSV data
+                const rows = csvText.split('\n');
+                const sheetExpenses = [];
+                
+                // Skip header row (row 0) and process data
+                for (let i = 1; i < rows.length; i++) {
+                    const row = rows[i].trim();
+                    if (!row) continue;
+                    
+                    // Parse CSV row
+                    const columns = parseCSVRow(row);
+                    
+                    // Your Google Form columns:
+                    // Column 0: Timestamp
+                    // Column 1: Date (entry.1057050782)
+                    // Column 2: Amount (entry.513978665)
+                    // Column 3: Category (entry.1397898536)
+                    // Column 4: Description (entry.1649295470)
+                    // Column 5: Payment Method (entry.1579942531)
+                    
+                    if (columns.length >= 6) {
+                        const expense = {
+                            date: columns[1] || '',
+                            amount: parseFloat(columns[2]) || 0,
+                            category: columns[3] || 'OTHER',
+                            description: columns[4] || '',
+                            paymentMethod: columns[5] || 'Cash',
+                            source: 'google_sheets',
+                            syncStatus: 'synced',
+                            timestamp: columns[0] || new Date().toISOString()
+                        };
+                        
+                        // Only add if it has valid data
+                        if (expense.date && expense.amount > 0) {
+                            sheetExpenses.push(expense);
+                        }
+                    }
+                }
+                
+                if (sheetExpenses.length > 0) {
+                    // Merge with existing expenses (avoid duplicates)
+                    mergeWithLocalData(sheetExpenses);
+                    console.log(`✅ Loaded ${sheetExpenses.length} expenses from Google Sheets`);
+                    
+                    // Show brief success message
+                    setTimeout(() => {
+                        showMessage(`✅ Synced ${sheetExpenses.length} expenses from Google Sheets`, 'success');
+                    }, 100);
+                    
+                    // Auto-refresh every 30 seconds when online
+                    if (isOnline) {
+                        setTimeout(loadFromGoogleSheets, 30000);
+                    }
+                } else {
+                    console.log('No new data in Google Sheets');
+                }
+                
+            } catch (error) {
+                console.error('Error loading from Google Sheets:', error);
+                // Silently fail - don't show error to user
+            }
+            
+            hideLoading();
+        }
+        
+        function parseCSVRow(row) {
+            const columns = [];
+            let currentColumn = '';
+            let insideQuotes = false;
+            
+            for (let i = 0; i < row.length; i++) {
+                const char = row[i];
+                
+                if (char === '"') {
+                    insideQuotes = !insideQuotes;
+                } else if (char === ',' && !insideQuotes) {
+                    columns.push(currentColumn.trim());
+                    currentColumn = '';
+                } else {
+                    currentColumn += char;
+                }
+            }
+            
+            // Add the last column
+            columns.push(currentColumn.trim());
+            
+            return columns.map(col => col.replace(/^"|"$/g, ''));
+        }
+        
+        function mergeWithLocalData(sheetExpenses) {
+            const localExpenses = expenses;
+            const mergedExpenses = [...localExpenses];
+            const seenIds = new Set();
+            
+            // Add local expenses to seen set
+            localExpenses.forEach(exp => {
+                const id = `${exp.date}_${exp.amount}_${exp.category}_${exp.description || ''}_${exp.paymentMethod}`;
+                seenIds.add(id);
+            });
+            
+            // Add sheets data if not already present
+            sheetExpenses.forEach(sheetExp => {
+                const id = `${sheetExp.date}_${sheetExp.amount}_${sheetExp.category}_${sheetExp.description || ''}_${sheetExp.paymentMethod}`;
+                if (!seenIds.has(id)) {
+                    mergedExpenses.push(sheetExp);
+                    seenIds.add(id);
+                }
+            });
+            
+            // Update expenses
+            expenses = mergedExpenses;
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            
+            // Update UI
+            calculateStatistics();
+            renderExpenses();
+            populateMonthFilter();
+            
+            console.log(`Merged data: ${localExpenses.length} local + ${sheetExpenses.length} sheets = ${expenses.length} total`);
         }
         
         // ============================================
@@ -1464,7 +1543,6 @@
             
             const submitBtn = document.getElementById('submitBtn');
             
-            // Get form data
             const formData = {
                 date: document.getElementById('expenseDate').value,
                 amount: parseFloat(document.getElementById('amount').value),
@@ -1473,7 +1551,6 @@
                 paymentMethod: document.getElementById('paymentMethod').value
             };
             
-            // Validate
             if (!formData.amount || formData.amount <= 0) {
                 showMessage('Please enter a valid amount', 'error');
                 return;
@@ -1484,34 +1561,30 @@
                 return;
             }
             
-            // Disable button and show loading
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
             showLoading('Saving to Google Sheets...');
             
             try {
-                // Save locally first
                 const localId = Date.now();
                 const newExpense = {
                     ...formData,
                     id: localId,
                     localId: localId,
                     syncStatus: 'pending',
+                    source: 'local',
                     timestamp: new Date().toISOString()
                 };
                 
                 expenses.unshift(newExpense);
                 localStorage.setItem('expenses', JSON.stringify(expenses));
                 
-                // Submit to Google Sheets
                 const submitted = await submitToGoogleSheets(formData);
                 
-                // Update local status
                 if (submitted) {
                     newExpense.syncStatus = 'synced';
                     localStorage.setItem('expenses', JSON.stringify(expenses));
                     
-                    // Show success animation
                     showSuccessAnimation();
                     showMessage('✅ Expense saved to Google Sheets!', 'success');
                 } else if (!isOnline) {
@@ -1520,7 +1593,6 @@
                     showMessage('⚠️ Saved locally. Will retry sync.', 'warning');
                 }
                 
-                // Update UI
                 calculateStatistics();
                 renderExpenses();
                 populateMonthFilter();
@@ -1530,24 +1602,25 @@
                 showMessage('Error saving expense. Saved locally.', 'error');
             }
             
-            // Reset form
             document.getElementById('amount').value = '';
             document.getElementById('description').value = '';
             document.getElementById('category').selectedIndex = 0;
             document.getElementById('paymentMethod').selectedIndex = 0;
             document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
             
-            // Re-enable button
             submitBtn.disabled = false;
             submitBtn.textContent = '💾 Save to Google Sheets';
             hideLoading();
             
-            // Focus on amount
             document.getElementById('amount').focus();
             
-            // Auto-sync if online
             if (isOnline && pendingSyncQueue.length > 0) {
                 setTimeout(syncPendingExpenses, 2000);
+            }
+            
+            // Auto-refresh from Google Sheets after saving
+            if (isOnline) {
+                setTimeout(loadFromGoogleSheets, 3000);
             }
         });
         
@@ -1561,7 +1634,7 @@
             }
             
             try {
-                const headers = ['Date', 'Category', 'Description', 'Payment Method', 'Amount', 'Sync Status'];
+                const headers = ['Date', 'Category', 'Description', 'Payment Method', 'Amount', 'Source', 'Sync Status'];
                 const csvData = [
                     headers.join(','),
                     ...expenses.map(exp => [
@@ -1570,6 +1643,7 @@
                         `"${exp.description || ''}"`,
                         `"${exp.paymentMethod}"`,
                         exp.amount,
+                        exp.source || 'local',
                         exp.syncStatus || 'pending'
                     ].join(','))
                 ].join('\n');
@@ -1614,16 +1688,7 @@
             renderExpenses();
             populateMonthFilter();
             console.log('✅ Expense Tracker initialized with Google Sheets integration');
-            console.log('📊 Your form field IDs:', FIELD_IDS);
-        }
-        
-        // Manual sync button (can be added to UI if needed)
-        function manualSync() {
-            if (pendingSyncQueue.length > 0) {
-                syncPendingExpenses();
-            } else {
-                showMessage('No pending items to sync', 'success');
-            }
+            console.log('📊 Google Sheet ID:', GOOGLE_SHEET_ID);
         }
     </script>
 </body>

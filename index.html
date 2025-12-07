@@ -540,6 +540,34 @@
             100% { transform: rotate(360deg); }
         }
         
+        /* Success Animation */
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #10b981;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInOut 2s ease-in-out;
+            display: none;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+        }
+        
         /* Mobile Bottom Actions */
         .mobile-bottom-actions {
             position: fixed;
@@ -605,34 +633,6 @@
                 min-height: 36px;
                 min-width: 60px;
             }
-        }
-        
-        /* Success Animation */
-        .success-animation {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #10b981;
-            color: white;
-            padding: 20px 30px;
-            border-radius: 15px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: fadeInOut 2s ease-in-out;
-            display: none;
-        }
-        
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-            40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
         }
     </style>
 </head>
@@ -842,21 +842,22 @@
         // ============================================
         const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/formResponse';
         
-        // From your URL: https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/viewform?usp=pp_url&entry.1057050782=0001-01-01&entry.513978665=1&entry.1649295470=1&entry.1579942531=Cash
-        // We can see the field IDs:
+        // From your URL: https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/viewform?usp=pp_url&entry.1057050782=1111-02-01&entry.513978665=1&entry.1397898536=Food+%26+Dining&entry.1649295470=1&entry.1579942531=Cash
+        
+        // We can see ALL your field IDs now:
         const FIELD_IDS = {
             date: 'entry.1057050782',        // Date field
             amount: 'entry.513978665',       // Amount field  
-            category: 'entry.1649295470',    // Category field
+            category: 'entry.1397898536',    // Category field (different from before!)
+            description: 'entry.1649295470', // Description field
             paymentMethod: 'entry.1579942531' // Payment Method field
         };
         
-        // Note: I can see 4 fields in your URL. You might have a Description field too.
-        // If you have Description field, add it like: description: 'entry.XXXXXXX'
+        console.log('Form Field IDs configured:', FIELD_IDS);
         
         let expenses = [];
         let pendingSyncQueue = [];
-        let isOnline = true; // Assume online initially
+        let isOnline = true;
         
         // ============================================
         // INITIALIZATION
@@ -879,10 +880,6 @@
             
             // Check connection
             checkConnection();
-            
-            // Test form submission
-            console.log('Form configured with these fields:', FIELD_IDS);
-            console.log('Form URL:', FORM_URL);
         });
         
         function loadFromLocalStorage() {
@@ -903,7 +900,6 @@
         }
         
         function checkConnection() {
-            // Simple connection check
             isOnline = navigator.onLine;
             updateConnectionStatus();
             
@@ -1113,20 +1109,17 @@
                     const categoryClass = 'category-' + (expense.category || 'other').toLowerCase().replace(/ & /g, '-').split(' ')[0];
                     const categoryName = expense.category || 'Other';
                     
-                    // Status indicator
-                    const statusIcon = expense.syncStatus === 'synced' ? '✅' : '⏳';
-                    
                     html += `
                         <tr>
                             <td class="date-cell">${formatDate(expense.date)}</td>
                             <td><span class="category-badge ${categoryClass}">${categoryName}</span></td>
                             <td>${expense.description || '-'}</td>
                             <td>${expense.paymentMethod || 'Cash'}</td>
-                            <td class="amount-cell">${formatCurrency(amount)} ${statusIcon}</td>
+                            <td class="amount-cell">${formatCurrency(amount)}</td>
                             <td>
                                 <div class="mobile-actions">
-                                    <button onclick="editExpense(${index})">✏️ Edit</button>
-                                    <button onclick="deleteExpense(${index})">🗑️ Delete</button>
+                                    <button onclick="editExpense(${index})">✏️</button>
+                                    <button onclick="deleteExpense(${index})">🗑️</button>
                                 </div>
                             </td>
                         </tr>
@@ -1136,8 +1129,8 @@
                 if (sortedExpenses.length > 0) {
                     html += `
                         <tr class="total-row">
-                            <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
-                            <td><strong>${formatCurrency(total)}</strong></td>
+                            <td colspan="4" style="text-align: right;">Total:</td>
+                            <td>${formatCurrency(total)}</td>
                             <td></td>
                         </tr>
                     `;
@@ -1294,6 +1287,8 @@
         // GOOGLE SHEETS SUBMISSION - WORKING VERSION
         // ============================================
         async function submitToGoogleSheets(formData) {
+            console.log('Submitting to Google Sheets:', formData);
+            
             if (!isOnline) {
                 // Queue for offline sync
                 const pendingExpense = {
@@ -1312,42 +1307,34 @@
                 // Create form data
                 const params = new URLSearchParams();
                 
-                // Use your actual field IDs from the URL
+                // Use your actual field IDs
                 params.append(FIELD_IDS.date, formData.date);
                 params.append(FIELD_IDS.amount, formData.amount.toString());
                 params.append(FIELD_IDS.category, formData.category);
-                
-                // Add description if you have a field for it
-                // params.append('entry.XXXXXXX', formData.description || '');
-                
+                params.append(FIELD_IDS.description, formData.description || '');
                 params.append(FIELD_IDS.paymentMethod, formData.paymentMethod);
                 
-                console.log('Submitting to Google Sheets:', {
-                    url: FORM_URL,
-                    data: Object.fromEntries(params)
-                });
+                console.log('Form data prepared:', Object.fromEntries(params));
                 
-                // Submit with fetch
-                const response = await fetch(FORM_URL, {
+                // Submit using fetch with no-cors
+                await fetch(FORM_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Important for Google Forms
+                    mode: 'no-cors',
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded'
                     },
                     body: params.toString()
                 });
                 
-                // Note: With 'no-cors' we can't read response, but submission works
                 console.log('Submission successful (no-cors mode)');
                 return true;
                 
             } catch (error) {
                 console.error('Error submitting to Google Sheets:', error);
                 
-                // Fallback: Try with iframe method
+                // Try alternative method
                 try {
-                    submitViaIframe(formData);
-                    return true;
+                    return await submitViaIframe(formData);
                 } catch (iframeError) {
                     console.error('Iframe submission also failed:', iframeError);
                     return false;
@@ -1356,41 +1343,49 @@
         }
         
         function submitViaIframe(formData) {
-            // Alternative method using hidden iframe
-            const iframe = document.createElement('iframe');
-            iframe.style.display = 'none';
-            iframe.name = 'googleFormSubmit';
-            document.body.appendChild(iframe);
-            
-            const form = document.createElement('form');
-            form.target = 'googleFormSubmit';
-            form.action = FORM_URL;
-            form.method = 'POST';
-            
-            // Add fields
-            const fields = [
-                {name: FIELD_IDS.date, value: formData.date},
-                {name: FIELD_IDS.amount, value: formData.amount.toString()},
-                {name: FIELD_IDS.category, value: formData.category},
-                {name: FIELD_IDS.paymentMethod, value: formData.paymentMethod}
-            ];
-            
-            fields.forEach(field => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = field.name;
-                input.value = field.value;
-                form.appendChild(input);
+            return new Promise((resolve, reject) => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.name = 'googleFormSubmit_' + Date.now();
+                    document.body.appendChild(iframe);
+                    
+                    const form = document.createElement('form');
+                    form.target = iframe.name;
+                    form.action = FORM_URL;
+                    form.method = 'POST';
+                    
+                    // Add all fields
+                    const fields = [
+                        {name: FIELD_IDS.date, value: formData.date},
+                        {name: FIELD_IDS.amount, value: formData.amount.toString()},
+                        {name: FIELD_IDS.category, value: formData.category},
+                        {name: FIELD_IDS.description, value: formData.description || ''},
+                        {name: FIELD_IDS.paymentMethod, value: formData.paymentMethod}
+                    ];
+                    
+                    fields.forEach(field => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = field.name;
+                        input.value = field.value;
+                        form.appendChild(input);
+                    });
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                    
+                    // Cleanup and resolve
+                    setTimeout(() => {
+                        document.body.removeChild(form);
+                        document.body.removeChild(iframe);
+                        resolve(true);
+                    }, 1000);
+                    
+                } catch (error) {
+                    reject(error);
+                }
             });
-            
-            document.body.appendChild(form);
-            form.submit();
-            
-            // Cleanup
-            setTimeout(() => {
-                document.body.removeChild(form);
-                document.body.removeChild(iframe);
-            }, 1000);
         }
         
         async function syncPendingExpenses() {
@@ -1596,8 +1591,8 @@
             calculateStatistics();
             renderExpenses();
             populateMonthFilter();
-            console.log('Expense Tracker initialized with Google Sheets integration');
-            console.log('Your form field IDs:', FIELD_IDS);
+            console.log('✅ Expense Tracker initialized with Google Sheets integration');
+            console.log('📊 Your form field IDs:', FIELD_IDS);
         }
         
         // Manual sync button (can be added to UI if needed)

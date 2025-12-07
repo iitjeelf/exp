@@ -868,7 +868,7 @@
 
     <script>
         // ============================================
-        // CONFIGURATION
+        // CONFIGURATION - USING YOUR ACTUAL SHEET ID
         // ============================================
         const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/formResponse';
         
@@ -880,8 +880,8 @@
             paymentMethod: 'entry.1579942531'
         };
         
-        // YOUR GOOGLE SHEET ID - FIXED URL FORMAT
-        const GOOGLE_SHEET_ID = '10kSXj24kvNW-nF4a7EwLXEpVvSwfJJ0y1c5b4Pxk8y4';
+        // YOUR ACTUAL GOOGLE SHEET ID
+        const GOOGLE_SHEET_ID = '1rN-zmni_Gi7eSJz6jo5vgV_Gbt-bL7a8mqVeVSvtOpA';
         
         let expenses = [];
         let pendingSyncQueue = [];
@@ -928,7 +928,7 @@
         }
         
         // ============================================
-        // CLEAR ALL DATA
+        // CLEAR ALL DATA - FIXED VERSION
         // ============================================
         function clearAllData() {
             if (expenses.length === 0) {
@@ -950,13 +950,12 @@
                 renderExpenses();
                 populateMonthFilter();
                 
-                // Show success message with recovery instructions
                 showMessage(`✅ Cleared ${count} expenses from local storage. Click "Get Data Back" button to restore from Google Sheets.`, 'success');
             }
         }
         
         // ============================================
-        // GOOGLE SHEETS READING - SIMPLE WORKING VERSION
+        // GOOGLE SHEETS READING - SIMPLIFIED & WORKING
         // ============================================
         async function loadFromGoogleSheets() {
             if (!GOOGLE_SHEET_ID) {
@@ -967,11 +966,10 @@
             showLoading('Loading from Google Sheets...');
             
             try {
-                // METHOD 1: Direct CSV export with gid=0 (first sheet)
-                // This is the CORRECT format that works
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv&gid=0`;
+                // Use the direct export URL that works with your sheet
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/export?format=csv`;
                 
-                console.log('Trying URL:', csvUrl);
+                console.log('Fetching from:', csvUrl);
                 
                 const response = await fetch(csvUrl);
                 
@@ -980,17 +978,27 @@
                 }
                 
                 const csvText = await response.text();
-                console.log('Raw CSV response (first 500 chars):', csvText.substring(0, 500));
+                
+                // Debug info
+                console.log('CSV length:', csvText.length);
+                const lines = csvText.split('\n');
+                console.log('Number of lines:', lines.length);
+                if (lines.length > 0) {
+                    console.log('Headers:', lines[0]);
+                    if (lines.length > 1) console.log('First data row:', lines[1]);
+                }
                 
                 if (!csvText || csvText.trim() === '') {
                     throw new Error('Empty response from Google Sheets');
                 }
                 
-                // Parse CSV data
+                // Parse the CSV data
                 const sheetExpenses = parseCSVData(csvText);
                 
+                console.log(`Successfully parsed ${sheetExpenses.length} expenses`);
+                
                 if (sheetExpenses.length > 0) {
-                    // Replace all data with sheet data
+                    // Replace all local data with sheet data
                     expenses = sheetExpenses;
                     currentFilteredExpenses = [...expenses];
                     localStorage.setItem('expenses', JSON.stringify(expenses));
@@ -1004,109 +1012,101 @@
                     renderExpenses();
                     populateMonthFilter();
                 } else {
-                    showMessage('No valid expense data found in Google Sheets', 'warning');
+                    showMessage('⚠️ No valid expense data found in Google Sheets. Check if sheet has data.', 'warning');
                 }
                 
             } catch (error) {
                 console.error('Error loading from Google Sheets:', error);
-                
-                // Try alternative method
-                try {
-                    await tryAlternativeMethod();
-                } catch (altError) {
-                    console.error('Alternative method also failed:', altError);
-                    showMessage(`Failed to load data: ${error.message}. Make sure your Google Sheet is public and has data.`, 'error');
-                }
+                showMessage(`❌ Failed to load data: ${error.message}. Please ensure your Google Sheet is public.`, 'error');
             }
             
             hideLoading();
         }
         
-        async function tryAlternativeMethod() {
-            // Alternative URL format
-            const altUrl = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv`;
-            
-            console.log('Trying alternative URL:', altUrl);
-            
-            const response = await fetch(altUrl);
-            const csvText = await response.text();
-            
-            // Parse the special Google Visualization format
-            const sheetExpenses = parseGVizData(csvText);
-            
-            if (sheetExpenses.length > 0) {
-                expenses = sheetExpenses;
-                currentFilteredExpenses = [...expenses];
-                localStorage.setItem('expenses', JSON.stringify(expenses));
-                
-                updateLastSyncTime();
-                showMessage(`✅ Loaded ${expenses.length} expenses (alternative method)`, 'success');
-                
-                calculateStatistics();
-                renderExpenses();
-                populateMonthFilter();
-            } else {
-                throw new Error('No data from alternative method');
-            }
-        }
-        
+        // ============================================
+        // CSV PARSING FUNCTIONS - IMPROVED
+        // ============================================
         function parseCSVData(csvText) {
             const expenses = [];
             const rows = csvText.split('\n');
             
             console.log('Total rows in CSV:', rows.length);
             
-            // Skip header row
+            // Skip header row (row 0)
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i].trim();
                 if (!row) continue;
-                
-                console.log(`Row ${i}:`, row);
                 
                 try {
                     // Parse CSV row with quotes handling
                     const columns = parseCSVRow(row);
                     
-                    console.log(`Row ${i} columns:`, columns);
-                    
-                    // Your Google Form columns based on FIELD_IDS:
+                    // Google Forms exports typically have this format:
                     // Column 0: Timestamp
-                    // Column 1: Date (entry.1057050782)
-                    // Column 2: Amount (entry.513978665)
-                    // Column 3: Category (entry.1397898536)
-                    // Column 4: Description (entry.1649295470)
-                    // Column 5: Payment Method (entry.1579942531)
+                    // Column 1: Date
+                    // Column 2: Amount
+                    // Column 3: Category
+                    // Column 4: Description
+                    // Column 5: Payment Method
                     
-                    if (columns.length >= 6) {
-                        const expense = {
-                            date: columns[1] || '',
-                            amount: parseFloat(columns[2].replace(/[^0-9.-]+/g, '')) || 0,
-                            category: columns[3] || 'OTHER',
-                            description: columns[4] || '',
-                            paymentMethod: columns[5] || 'Cash',
-                            source: 'google_sheets',
-                            syncStatus: 'synced',
-                            timestamp: columns[0] || new Date().toISOString()
-                        };
+                    if (columns.length >= 3) { // Need at least timestamp, date, amount
+                        const timestamp = columns[0] || '';
+                        let date = columns[1] || '';
+                        const amountStr = columns[2] || '0';
+                        const category = columns[3] || 'OTHER';
+                        const description = columns[4] || '';
+                        const paymentMethod = columns[5] || 'Cash';
                         
-                        // Validate date format
-                        if (expense.date) {
-                            // Try to parse and reformat date
-                            const dateObj = new Date(expense.date);
+                        // Parse amount
+                        const amount = parseFloat(amountStr.replace(/[^0-9.-]+/g, '')) || 0;
+                        
+                        // Format date
+                        let formattedDate = '';
+                        if (date) {
+                            // Try multiple date formats
+                            const dateObj = new Date(date);
                             if (!isNaN(dateObj.getTime())) {
-                                expense.date = dateObj.toISOString().split('T')[0];
+                                formattedDate = dateObj.toISOString().split('T')[0];
+                            } else {
+                                // Try DD/MM/YYYY format (common in India)
+                                const parts = date.split('/');
+                                if (parts.length === 3) {
+                                    // DD/MM/YYYY to YYYY-MM-DD
+                                    formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                } else {
+                                    // Try other separators
+                                    const altParts = date.split('-');
+                                    if (altParts.length === 3) {
+                                        if (altParts[0].length === 4) {
+                                            // YYYY-MM-DD already
+                                            formattedDate = date;
+                                        } else {
+                                            // DD-MM-YYYY to YYYY-MM-DD
+                                            formattedDate = `${altParts[2]}-${altParts[1].padStart(2, '0')}-${altParts[0].padStart(2, '0')}`;
+                                        }
+                                    }
+                                }
                             }
                         }
                         
-                        console.log(`Parsed expense ${i}:`, expense);
+                        // Create expense object
+                        const expense = {
+                            date: formattedDate || new Date().toISOString().split('T')[0],
+                            amount: amount,
+                            category: category || 'OTHER',
+                            description: description || '',
+                            paymentMethod: paymentMethod || 'Cash',
+                            source: 'google_sheets',
+                            syncStatus: 'synced',
+                            timestamp: timestamp || new Date().toISOString()
+                        };
                         
+                        // Only add if we have valid data
                         if (expense.date && expense.amount > 0) {
                             expenses.push(expense);
                         } else {
-                            console.log(`Skipped row ${i}: invalid data`, expense);
+                            console.log('Skipping invalid row:', row);
                         }
-                    } else {
-                        console.log(`Skipped row ${i}: not enough columns`, columns.length);
                     }
                 } catch (error) {
                     console.error(`Error parsing row ${i}:`, error, row);
@@ -1114,50 +1114,6 @@
             }
             
             console.log(`Total parsed expenses: ${expenses.length}`);
-            return expenses;
-        }
-        
-        function parseGVizData(csvText) {
-            // Google Visualization format has special formatting
-            const expenses = [];
-            const rows = csvText.split('\n');
-            
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i].trim();
-                if (!row) continue;
-                
-                // Remove Google Visualization formatting
-                const cleanRow = row.replace(/"/g, '').replace(/date\(/gi, '').replace(/\)/g, '');
-                const columns = cleanRow.split(',');
-                
-                if (columns.length >= 6) {
-                    // Parse date from Google timestamp format
-                    let dateStr = columns[1];
-                    if (dateStr.includes(',')) {
-                        // Handle date format like "2024,0,15" (year, month-1, day)
-                        const dateParts = dateStr.split(',').map(Number);
-                        if (dateParts.length >= 3) {
-                            const dateObj = new Date(dateParts[0], dateParts[1], dateParts[2]);
-                            dateStr = dateObj.toISOString().split('T')[0];
-                        }
-                    }
-                    
-                    const expense = {
-                        date: dateStr,
-                        amount: parseFloat(columns[2]) || 0,
-                        category: columns[3] || 'OTHER',
-                        description: columns[4] || '',
-                        paymentMethod: columns[5] || 'Cash',
-                        source: 'google_sheets',
-                        syncStatus: 'synced'
-                    };
-                    
-                    if (expense.date && expense.amount > 0) {
-                        expenses.push(expense);
-                    }
-                }
-            }
-            
             return expenses;
         }
         
@@ -1170,16 +1126,18 @@
             for (let i = 0; i < row.length; i++) {
                 const char = row[i];
                 
-                if ((char === '"' || char === "'") && (quoteChar === '' || quoteChar === char)) {
-                    if (!insideQuotes) {
-                        insideQuotes = true;
-                        quoteChar = char;
-                    } else if (row[i + 1] === ',') {
+                if ((char === '"' || char === "'") && !insideQuotes) {
+                    insideQuotes = true;
+                    quoteChar = char;
+                } else if (char === quoteChar && insideQuotes) {
+                    if (i + 1 >= row.length || row[i + 1] === ',') {
                         insideQuotes = false;
                         quoteChar = '';
+                    } else {
+                        currentColumn += char;
                     }
                 } else if (char === ',' && !insideQuotes) {
-                    columns.push(currentColumn.trim());
+                    columns.push(currentColumn);
                     currentColumn = '';
                 } else {
                     currentColumn += char;
@@ -1187,28 +1145,23 @@
             }
             
             // Add the last column
-            columns.push(currentColumn.trim());
+            columns.push(currentColumn);
             
-            // Remove quotes from each column
-            return columns.map(col => {
-                col = col.replace(/^["']|["']$/g, '');
-                return col;
-            });
+            return columns;
         }
         
         function updateLastSyncTime() {
             const now = new Date();
             const timeString = now.toLocaleTimeString('en-IN', {
                 hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+                minute: '2-digit'
             });
             const dateString = now.toLocaleDateString('en-IN');
             document.getElementById('lastSyncTime').textContent = `Last sync: ${dateString} ${timeString}`;
         }
         
         // ============================================
-        // REST OF THE FUNCTIONS
+        // UTILITY FUNCTIONS
         // ============================================
         function checkConnection() {
             isOnline = navigator.onLine;

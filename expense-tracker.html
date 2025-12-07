@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #444;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-test {
+            background: #10b981;
+            margin-top: 5px;
+        }
+        
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        
+        .expenses-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .expenses-table th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            color: #666;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .expenses-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .expenses-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .amount {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .expenses-table {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Expense Tracker</h1>
+        <p class="subtitle">Save expenses directly to Google Sheets</p>
+        
+        <div class="form-container">
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label for="date">Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="amount">Amount (₹)</label>
+                    <input type="number" id="amount" step="0.01" min="0" required placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Food">Food</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Bills">Bills</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Education">Education</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description (Optional)</label>
+                    <input type="text" id="description" placeholder="What was this for?">
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method</label>
+                    <select id="paymentMethod">
+                        <option value="Cash">Cash</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Debit Card">Debit Card</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Net Banking">Net Banking</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn" id="submitBtn">
+                    Save to Google Sheets
+                </button>
+            </form>
+            
+            <button class="btn btn-test" onclick="testConnection()">
+                Test Google Sheets Connection
+            </button>
+            
+            <div id="status" class="status"></div>
+            
+            <div style="margin-top: 20px; text-align: center;">
+                <span id="connectionText">Status: Not checked</span>
+                <span id="connectionStatus" class="connection-status"></span>
+            </div>
+        </div>
+        
+        <h3>Recent Expenses</h3>
+        <table class="expenses-table" id="expensesTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="expensesList">
+                <!-- Expenses will appear here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        // IMPORTANT: Replace with your ACTUAL Google Apps Script URL
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUiuC_NLCfuajqzpSly2kAPaY9xSPqEZrTPrTp_cz2ig49Hwzsau7v5d1yg6aa_QsnGA/exec";
+        
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+            
+            // Load any locally saved expenses
+            loadLocalExpenses();
+            
+            // Test connection on load
+            testConnection();
+        });
+        
+        // ============================================
+        // FORM SUBMISSION
+        // ============================================
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            
+            // Get form data
+            const formData = {
+                date: document.getElementById('date').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value,
+                description: document.getElementById('description').value || "",
+                paymentMethod: document.getElementById('paymentMethod').value
+            };
+            
+            // Validate
+            if (!formData.amount || formData.amount <= 0) {
+                showStatus('Please enter a valid amount', 'error');
+                return;
+            }
+            
+            if (!formData.category) {
+                showStatus('Please select a category', 'error');
+                return;
+            }
+            
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+            
+            try {
+                console.log('Sending data to Google Sheets:', formData);
+                
+                // Send to Google Sheets
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                console.log('Response received');
+                
+                const result = await response.json();
+                console.log('Result:', result);
+                
+                if (result.success) {
+                    showStatus('✅ Expense saved to Google Sheets!', 'success');
+                    
+                    // Add to local display
+                    addExpenseToTable(formData);
+                    
+                    // Reset form
+                    document.getElementById('amount').value = '';
+                    document.getElementById('description').value = '';
+                    document.getElementById('category').selectedIndex = 0;
+                    
+                    // Update connection status
+                    updateConnectionStatus(true);
+                } else {
+                    showStatus('❌ Error: ' + (result.error || result.message), 'error');
+                    // Save locally as fallback
+                    saveExpenseLocally(formData);
+                }
+                
+            } catch (error) {
+                console.error('Save error:', error);
+                showStatus('❌ Network error. Saving locally.', 'error');
+                
+                // Save locally as fallback
+                saveExpenseLocally(formData);
+                
+                // Update connection status
+                updateConnectionStatus(false);
+            } finally {
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Save to Google Sheets';
+                
+                // Clear status after 5 seconds
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        });
+        
+        // ============================================
+        // TEST CONNECTION
+        // ============================================
+        async function testConnection() {
+            const statusText = document.getElementById('connectionText');
+            const statusBadge = document.getElementById('connectionStatus');
+            
+            statusText.textContent = 'Testing connection...';
+            statusBadge.textContent = 'Testing';
+            statusBadge.className = 'connection-status';
+            
+            try {
+                console.log('Testing connection to:', GOOGLE_SCRIPT_URL);
+                
+                const response = await fetch(GOOGLE_SCRIPT_URL);
+                console.log('Response status:', response.status);
+                
+                const result = await response.json();
+                console.log('Test result:', result);
+                
+                if (result.success) {
+                    statusText.textContent = 'Connected to Google Sheets';
+                    statusBadge.textContent = 'Connected';
+                    statusBadge.className = 'connection-status connected';
+                    showStatus('✅ Connected to Google Sheets!', 'success');
+                    return true;
+                } else {
+                    statusText.textContent = 'Google Sheets error';
+                    statusBadge.textContent = 'Error';
+                    statusBadge.className = 'connection-status disconnected';
+                    showStatus('⚠️ Google Sheets returned error', 'error');
+                    return false;
+                }
+                
+            } catch (error) {
+                console.error('Connection test failed:', error);
+                statusText.textContent = 'Cannot connect to Google Sheets';
+                statusBadge.textContent = 'Disconnected';
+                statusBadge.className = 'connection-status disconnected';
+                showStatus('❌ Cannot connect to Google Sheets', 'error');
+                return false;
+            }
+        }
+        
+        function updateConnectionStatus(isConnected) {
+            const statusText = document.getElementById('connectionText');
+            const statusBadge = document.getElementById('connectionStatus');
+            
+            if (isConnected) {
+                statusText.textContent = 'Connected to Google Sheets';
+                statusBadge.textContent = 'Connected';
+                statusBadge.className = 'connection-status connected';
+            } else {
+                statusText.textContent = 'Working offline';
+                statusBadge.textContent = 'Offline';
+                statusBadge.className = 'connection-status disconnected';
+            }
+        }
+        
+        // ============================================
+        // LOCAL STORAGE FUNCTIONS
+        // ============================================
+        function saveExpenseLocally(expense) {
+            const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            expenses.unshift({
+                ...expense,
+                id: Date.now(),
+                local: true
+            });
+            
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            addExpenseToTable(expense);
+        }
+        
+        function loadLocalExpenses() {
+            const expenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            
+            if (expenses.length > 0) {
+                expenses.slice(0, 10).forEach(expense => {
+                    addExpenseToTable(expense);
+                });
+                
+                const status = document.getElementById('status');
+                status.textContent = `📱 Showing ${Math.min(expenses.length, 10)} local expenses`;
+                status.className = 'status';
+                status.style.display = 'block';
+            }
+        }
+        
+        function addExpenseToTable(expense) {
+            const tableBody = document.getElementById('expensesList');
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${formatDate(expense.date)}</td>
+                <td>${expense.category}</td>
+                <td>${expense.description || '-'}</td>
+                <td class="amount">₹${expense.amount.toFixed(2)}</td>
+            `;
+            
+            tableBody.insertBefore(row, tableBody.firstChild);
+            
+            // Keep only last 10 expenses in view
+            if (tableBody.children.length > 10) {
+                tableBody.removeChild(tableBody.lastChild);
+            }
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: 'short'
+            });
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

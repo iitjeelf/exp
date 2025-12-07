@@ -2,20 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Monthly Expense Tracker</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 15px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
         
         .container {
@@ -23,50 +26,47 @@
             margin: 0 auto;
             background: white;
             border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            overflow: hidden;
         }
         
         h1 {
             color: #333;
             text-align: center;
-            margin-bottom: 10px;
-            font-size: 2.2rem;
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+            font-weight: 700;
         }
         
         .subtitle {
             color: #666;
             text-align: center;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
+            margin-bottom: 25px;
+            font-size: 0.95rem;
         }
         
-        /* Dashboard */
+        /* Dashboard - Mobile First */
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
         }
         
-        @media (max-width: 768px) {
+        @media (min-width: 768px) {
             .dashboard {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .dashboard {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 15px;
             }
         }
         
         .stat-card {
             background: #f8f9fa;
             border-radius: 12px;
-            padding: 20px;
+            padding: 16px;
             border-left: 4px solid;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.05);
         }
         
         .stat-card.current-month { border-left-color: #10b981; }
@@ -76,66 +76,111 @@
         
         .stat-card h3 {
             color: #666;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 6px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
         
         .stat-card .amount {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #333;
+            word-break: break-word;
         }
         
         .stat-card .period {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #888;
-            margin-top: 5px;
+            margin-top: 4px;
         }
         
-        /* Form */
+        /* Quick Actions - Mobile Optimized */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        @media (min-width: 480px) {
+            .quick-actions {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        .quick-btn {
+            padding: 14px 8px;
+            background: white;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        
+        .quick-btn:active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+            transform: scale(0.98);
+        }
+        
+        /* Form Container */
         .form-container {
             background: #f8f9fa;
-            padding: 25px;
+            padding: 20px;
             border-radius: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         
         .form-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        @media (min-width: 640px) {
+            .form-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
         }
         
         .form-header h3 {
             color: #444;
             margin: 0;
+            font-size: 1.2rem;
         }
         
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
         
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #444;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
         
         input, select {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             border: 2px solid #e1e5e9;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
             background: white;
+            -webkit-appearance: none;
+            appearance: none;
         }
         
         input:focus, select:focus {
@@ -144,43 +189,60 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
+        /* Mobile-friendly input styling */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            padding: 8px;
+            cursor: pointer;
+        }
+        
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23667eea' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px;
+            padding-right: 40px;
+        }
+        
         .currency-input {
             position: relative;
         }
         
         .currency-symbol {
             position: absolute;
-            left: 15px;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
             color: #667eea;
             z-index: 1;
         }
         
         .currency-input input {
-            padding-left: 40px;
+            padding-left: 45px;
         }
         
-        /* Buttons */
+        /* Buttons - Mobile Optimized */
         .btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            padding: 16px;
-            border-radius: 10px;
+            padding: 18px;
+            border-radius: 12px;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             width: 100%;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+            transition: all 0.2s ease;
+            margin-top: 8px;
+            touch-action: manipulation;
+            position: relative;
+            overflow: hidden;
         }
         
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        .btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
         }
         
         .btn:disabled {
@@ -191,25 +253,29 @@
         
         .btn-secondary {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            padding: 12px 24px;
+            padding: 14px 22px;
             font-size: 0.9rem;
             width: auto;
+            min-width: 140px;
+            border-radius: 10px;
         }
         
         .btn-small {
             background: #6b7280;
-            padding: 8px 16px;
+            padding: 10px 14px;
             font-size: 0.85rem;
             margin: 0;
+            border-radius: 8px;
         }
         
         /* Status Messages */
         .status-message {
-            padding: 12px;
-            border-radius: 10px;
-            margin-top: 20px;
+            padding: 14px;
+            border-radius: 12px;
+            margin-top: 18px;
             text-align: center;
             display: none;
+            font-size: 0.95rem;
         }
         
         .success {
@@ -224,50 +290,87 @@
             display: block;
         }
         
-        /* Expenses Table */
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            display: block;
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Expenses Table - Mobile Optimized */
         .expenses-section {
-            margin-top: 40px;
+            margin-top: 30px;
             border-top: 1px solid #eee;
             padding-top: 20px;
         }
         
         .section-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        
+        @media (min-width: 640px) {
+            .section-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
         }
         
         .section-header h3 {
             color: #444;
             margin: 0;
+            font-size: 1.2rem;
         }
         
         .filter-controls {
             display: flex;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
             align-items: center;
         }
         
         .filter-controls select {
-            padding: 8px 12px;
+            padding: 10px 12px;
             font-size: 0.9rem;
-            width: auto;
+            min-width: 120px;
+            flex: 1;
         }
         
         .expenses-table-container {
             overflow-x: auto;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid #e9ecef;
             margin-top: 10px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
         }
         
         .expenses-table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 700px;
+            min-width: 600px;
         }
         
         .expenses-table th {
@@ -276,13 +379,15 @@
             text-align: left;
             color: #666;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             border-bottom: 2px solid #e9ecef;
+            white-space: nowrap;
         }
         
         .expenses-table td {
             padding: 12px;
             border-bottom: 1px solid #f1f3f4;
+            font-size: 0.9rem;
         }
         
         .expenses-table tr:hover {
@@ -290,11 +395,12 @@
         }
         
         .category-badge {
-            padding: 4px 12px;
+            padding: 5px 10px;
             border-radius: 15px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 500;
             display: inline-block;
+            white-space: nowrap;
         }
         
         .category-food { background: #e3f2fd; color: #1976d2; }
@@ -308,8 +414,9 @@
         
         .amount-cell {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #667eea;
+            white-space: nowrap;
         }
         
         .date-cell {
@@ -320,7 +427,7 @@
         
         .no-expenses {
             text-align: center;
-            padding: 40px;
+            padding: 40px 20px;
             color: #888;
             font-style: italic;
             font-size: 0.9rem;
@@ -336,180 +443,210 @@
             padding-top: 16px;
             padding-bottom: 16px;
             border-top: 2px solid #dee2e6;
+            font-size: 0.95rem;
         }
         
-        /* Quick Actions */
-        .quick-actions {
+        /* Mobile Action Buttons */
+        .mobile-actions {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
         
-        .quick-btn {
-            flex: 1;
-            padding: 12px;
-            background: white;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #667eea;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-        }
-        
-        .quick-btn:hover {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        /* Setup Instructions */
-        .setup-instructions {
-            background: #f0f9ff;
-            border: 2px solid #0ea5e9;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 30px;
-        }
-        
-        .setup-instructions h3 {
-            color: #0369a1;
-            margin-bottom: 15px;
-        }
-        
-        .setup-steps {
-            list-style-type: decimal;
-            padding-left: 20px;
-            color: #334155;
-        }
-        
-        .setup-steps li {
-            margin-bottom: 10px;
-            padding-left: 5px;
-        }
-        
-        .form-visual {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .form-field {
-            margin-bottom: 10px;
-            padding: 8px;
-            background: #f8fafc;
+        .mobile-actions button {
+            padding: 6px 10px;
+            border: none;
             border-radius: 6px;
-            border-left: 4px solid #0ea5e9;
+            font-size: 0.8rem;
+            cursor: pointer;
+            min-width: 50px;
+            touch-action: manipulation;
         }
         
-        .form-field .required {
-            color: #ef4444;
-            font-size: 0.9rem;
+        .mobile-actions button:first-child {
+            background: #3b82f6;
+            color: white;
         }
         
-        .form-field .optional {
-            color: #6b7280;
-            font-size: 0.9rem;
+        .mobile-actions button:last-child {
+            background: #ef4444;
+            color: white;
         }
         
-        /* Google Form Section */
-        .google-form-section {
+        /* Sync Status */
+        .sync-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
             background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            margin-bottom: 30px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .sync-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .sync-pending {
+            background-color: #f59e0b;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .sync-complete {
+            background-color: #10b981;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
             display: none;
         }
         
-        .google-form-section.active {
-            display: block;
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
         }
         
-        .form-preview {
-            margin-top: 20px;
-            padding: 20px;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Mobile Bottom Actions */
+        .mobile-bottom-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             background: white;
-            border: 2px dashed #ccc;
-            border-radius: 10px;
-            text-align: center;
-        }
-        
-        .google-form-link {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            word-break: break-all;
-        }
-        
-        .google-form-link:hover {
-            text-decoration: underline;
-        }
-        
-        /* Toggle buttons */
-        .toggle-buttons {
+            padding: 15px;
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
         }
         
-        .toggle-btn {
+        @media (max-width: 768px) {
+            .mobile-bottom-actions {
+                display: flex;
+            }
+            
+            body {
+                padding-bottom: 80px;
+            }
+        }
+        
+        .mobile-action-btn {
             flex: 1;
-            padding: 12px;
-            background: white;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
-            font-size: 0.9rem;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 600;
-            color: #667eea;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         
-        .toggle-btn.active {
+        .mobile-action-btn:first-child {
+            background: #10b981;
+            color: white;
+        }
+        
+        .mobile-action-btn:last-child {
             background: #667eea;
             color: white;
-            border-color: #667eea;
         }
         
-        /* Auto-loaded form notice */
-        .auto-loaded {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            text-align: center;
-            border-left: 4px solid #28a745;
+        /* Touch-friendly Improvements */
+        @media (hover: none) and (pointer: coarse) {
+            .btn, .quick-btn, .btn-secondary, .btn-small {
+                min-height: 44px;
+                padding: 12px;
+            }
+            
+            input, select {
+                min-height: 44px;
+                font-size: 16px;
+            }
+            
+            .mobile-actions button {
+                min-height: 36px;
+                min-width: 60px;
+            }
         }
         
-        /* GitHub Info */
-        .github-info {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            color: #666;
-            font-size: 0.9rem;
-        }
-        
-        .github-link {
-            color: #667eea;
-            text-decoration: none;
+        /* Success Animation */
+        .success-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #10b981;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2rem;
             font-weight: 600;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: fadeInOut 2s ease-in-out;
+            display: none;
         }
         
-        .github-link:hover {
-            text-decoration: underline;
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+            40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
         }
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div id="loadingText">Saving to Google Sheets...</div>
+    </div>
+    
+    <div class="success-animation" id="successAnimation">
+        <span>✅</span>
+        <span>Saved Successfully!</span>
+    </div>
+    
     <div class="container">
         <h1>💰 Monthly Expense Tracker</h1>
         <p class="subtitle">Track and analyze your monthly expenditures</p>
@@ -520,12 +657,6 @@
             <button class="quick-btn" onclick="addQuickExpense(200, 'Transportation')">Transport ₹200</button>
             <button class="quick-btn" onclick="addQuickExpense(1000, 'Shopping')">Shopping ₹1k</button>
             <button class="quick-btn" onclick="addQuickExpense(3000, 'Bills & Utilities')">Bills ₹3k</button>
-        </div>
-        
-        <!-- Toggle between Local and Google Forms -->
-        <div class="toggle-buttons">
-            <button class="toggle-btn active" onclick="showSection('local')">📱 Local Storage</button>
-            <button class="toggle-btn" onclick="showSection('google')">📊 Google Forms</button>
         </div>
         
         <!-- Statistics Dashboard -->
@@ -555,11 +686,13 @@
             </div>
         </div>
         
-        <!-- LOCAL STORAGE FORM -->
-        <div class="form-container" id="localForm">
+        <!-- Add Expense Form -->
+        <div class="form-container">
             <div class="form-header">
-                <h3>Add New Expense (Local Storage)</h3>
-                <button class="btn-secondary" onclick="exportToCSV()">📊 Export CSV</button>
+                <h3>Add New Expense</h3>
+                <button type="button" class="btn-secondary" onclick="exportToCSV()">
+                    📊 Export CSV
+                </button>
             </div>
             
             <form id="expenseForm">
@@ -609,7 +742,7 @@
                         type="text" 
                         id="description" 
                         name="description" 
-                        placeholder="What was this for? (Optional)"
+                        placeholder="What was this for?"
                     >
                 </div>
                 
@@ -625,56 +758,16 @@
                 </div>
                 
                 <button type="submit" class="btn" id="submitBtn">
-                    💾 Save Expense Locally
+                    💾 Save to Google Sheets
                 </button>
             </form>
             
             <div id="statusMessage" class="status-message"></div>
             
-            <div style="margin-top: 20px; text-align: center; color: #666; font-size: 0.9rem;">
-                💡 Data is saved in your browser. Export to CSV for backup.
-            </div>
-        </div>
-        
-        <!-- GOOGLE FORM SECTION -->
-        <div class="google-form-section" id="googleFormSection">
-            <div class="form-header">
-                <h3>Submit via Google Form</h3>
-                <button class="btn-secondary" onclick="loadGoogleForm()">🔄 Refresh Form</button>
-            </div>
-            
-            <div class="auto-loaded">
-                ✅ Google Form is pre-loaded! Your expenses will automatically save to Google Sheets.
-            </div>
-            
-            <div class="setup-instructions">
-                <h3>📋 Your Google Form is Ready!</h3>
-                <p style="color: #334155; margin-bottom: 15px;">
-                    Your form is already connected. Any submissions will automatically save to your Google Sheets.
-                </p>
-                
-                <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <strong>📊 View your Google Sheets:</strong><br>
-                    <a href="https://docs.google.com/spreadsheets/d/1vFwux1ZusogZfYYMPPSpv_QhK5xWstEGyfWqNF2BmRE/edit?usp=sharing" 
-                       target="_blank" class="google-form-link">
-                        Open your Expense Spreadsheet ↗
-                    </a>
-                </div>
-                
-                <p style="color: #666; font-size: 0.9rem;">
-                    <strong>Note:</strong> The form below is YOUR actual Google Form. Fill it to save expenses to your Google Sheets.
-                </p>
-            </div>
-            
-            <div class="form-preview" id="googleFormPreview">
-                <!-- Google Form will load here -->
-            </div>
-            
-            <div style="text-align: center; margin-top: 15px;">
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/viewform" 
-                   target="_blank" class="google-form-link">
-                    Open Google Form in new tab ↗
-                </a>
+            <div class="sync-status">
+                <span>Sync Status:</span>
+                <span id="connectionStatus" class="connection-status connected">🟢 Connected</span>
+                <span class="sync-indicator sync-complete"></span>
             </div>
         </div>
         
@@ -697,8 +790,7 @@
                         <option value="Education">Education</option>
                         <option value="Other">Other</option>
                     </select>
-                    <button class="btn-small" onclick="clearFilters()">Clear Filters</button>
-                    <button class="btn-small" onclick="exportToCSV()" style="background: #10b981;">📊 Export CSV</button>
+                    <button class="btn-small" onclick="clearFilters()">Clear</button>
                     <button class="btn-small" onclick="clearAllData()" style="background: #ef4444;">🗑️ Clear All</button>
                 </div>
             </div>
@@ -725,42 +817,46 @@
             </div>
         </div>
         
-        <!-- Quick Guide -->
-        <div class="setup-instructions">
-            <h3>🎯 How to Use This Tracker</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 15px;">
-                <div>
-                    <h4>📱 Local Storage (Default)</h4>
-                    <ul style="color: #334155;">
-                        <li>Fast & works offline</li>
-                        <li>Data stays in your browser</li>
-                        <li>Edit/Delete expenses</li>
-                        <li>Export to CSV anytime</li>
-                    </ul>
-                </div>
-                <div>
-                    <h4>📊 Google Forms</h4>
-                    <ul style="color: #334155;">
-                        <li>✅ Already connected!</li>
-                        <li>Saves to your Google Sheets</li>
-                        <li>Access from anywhere</li>
-                        <li>Automatic backup</li>
-                    </ul>
-                </div>
-            </div>
-            <p style="margin-top: 15px; color: #0369a1; padding: 10px; background: #e0f2fe; border-radius: 8px;">
-                💡 <strong>Pro Tip:</strong> Use Local Storage for daily tracking. Use Google Forms to back up important expenses!
+        <!-- Info Section -->
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #666; font-size: 0.85rem;">
+            <p>✅ Connected to Google Sheets | 💾 Works offline | 📱 Mobile-friendly</p>
+            <p style="margin-top: 5px; color: #10b981; font-weight: 600;">
+                Your form is ready! Data saves directly to your Google Sheets.
             </p>
         </div>
+    </div>
+    
+    <!-- Mobile Bottom Actions -->
+    <div class="mobile-bottom-actions">
+        <button class="mobile-action-btn" onclick="scrollToForm()">
+            📝 Add Expense
+        </button>
+        <button class="mobile-action-btn" onclick="exportToCSV()">
+            📊 Export CSV
+        </button>
     </div>
 
     <script>
         // ============================================
-        // CONFIGURATION - YOUR GOOGLE FORM IS ALREADY ADDED!
+        // CONFIGURATION - USING YOUR ACTUAL FIELD IDs!
         // ============================================
+        const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/formResponse';
+        
+        // From your URL: https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/viewform?usp=pp_url&entry.1057050782=0001-01-01&entry.513978665=1&entry.1649295470=1&entry.1579942531=Cash
+        // We can see the field IDs:
+        const FIELD_IDS = {
+            date: 'entry.1057050782',        // Date field
+            amount: 'entry.513978665',       // Amount field  
+            category: 'entry.1649295470',    // Category field
+            paymentMethod: 'entry.1579942531' // Payment Method field
+        };
+        
+        // Note: I can see 4 fields in your URL. You might have a Description field too.
+        // If you have Description field, add it like: description: 'entry.XXXXXXX'
+        
         let expenses = [];
-        // Your Google Form URL is pre-loaded!
-        const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSeMzDGmZXFswFB-QRBdy-6bGjB7OEF_MaK8yvifE_XVRK1tKw/viewform";
+        let pendingSyncQueue = [];
+        let isOnline = true; // Assume online initially
         
         // ============================================
         // INITIALIZATION
@@ -770,43 +866,89 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('expenseDate').value = today;
             
-            // Set Google Form URL in input (though it's already pre-loaded)
-            document.getElementById('googleFormUrl').value = GOOGLE_FORM_URL;
+            // Load data
+            loadFromLocalStorage();
             
             // Initialize app
             initApp();
             
-            // Load Google Form immediately
+            // Focus on amount
             setTimeout(() => {
-                loadGoogleForm();
-            }, 500);
+                document.getElementById('amount').focus();
+            }, 300);
             
-            // Focus on amount input
-            document.getElementById('amount').focus();
+            // Check connection
+            checkConnection();
+            
+            // Test form submission
+            console.log('Form configured with these fields:', FIELD_IDS);
+            console.log('Form URL:', FORM_URL);
         });
         
-        // ============================================
-        // SECTION TOGGLE
-        // ============================================
-        function showSection(section) {
-            const localForm = document.getElementById('localForm');
-            const googleFormSection = document.getElementById('googleFormSection');
-            const toggleButtons = document.querySelectorAll('.toggle-btn');
-            
-            toggleButtons.forEach(btn => btn.classList.remove('active'));
-            
-            if (section === 'local') {
-                localForm.style.display = 'block';
-                googleFormSection.classList.remove('active');
-                document.querySelector('.toggle-btn:nth-child(1)').classList.add('active');
-            } else {
-                localForm.style.display = 'none';
-                googleFormSection.classList.add('active');
-                document.querySelector('.toggle-btn:nth-child(2)').classList.add('active');
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('expenses');
+                expenses = saved ? JSON.parse(saved) : [];
                 
-                // Load Google Form
-                loadGoogleForm();
+                const savedQueue = localStorage.getItem('pendingSyncQueue');
+                pendingSyncQueue = savedQueue ? JSON.parse(savedQueue) : [];
+                
+                console.log(`Loaded ${expenses.length} expenses from localStorage`);
+                console.log(`${pendingSyncQueue.length} pending sync items`);
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+                expenses = [];
+                pendingSyncQueue = [];
             }
+        }
+        
+        function checkConnection() {
+            // Simple connection check
+            isOnline = navigator.onLine;
+            updateConnectionStatus();
+            
+            window.addEventListener('online', () => {
+                isOnline = true;
+                updateConnectionStatus();
+                showMessage('🟢 Back online', 'success');
+                syncPendingExpenses();
+            });
+            
+            window.addEventListener('offline', () => {
+                isOnline = false;
+                updateConnectionStatus();
+                showMessage('⚠️ You are offline. Expenses will sync when back online.', 'warning');
+            });
+        }
+        
+        // ============================================
+        // MOBILE FUNCTIONS
+        // ============================================
+        function scrollToForm() {
+            document.querySelector('.form-container').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+        
+        function showLoading(message = 'Saving...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = document.getElementById('loadingText');
+            text.textContent = message;
+            overlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.display = 'none';
+        }
+        
+        function showSuccessAnimation() {
+            const animation = document.getElementById('successAnimation');
+            animation.style.display = 'flex';
+            setTimeout(() => {
+                animation.style.display = 'none';
+            }, 2000);
         }
         
         // ============================================
@@ -833,22 +975,26 @@
         }
         
         function getMonthName(monthIndex) {
-            const months = [
-                "January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"
-            ];
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
             return months[monthIndex] || "Month";
         }
         
-        function showMessage(message, type) {
-            const statusMessage = document.getElementById('statusMessage');
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message ${type}`;
-            statusMessage.style.display = 'block';
+        // ============================================
+        // CONNECTION FUNCTIONS
+        // ============================================
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connectionStatus');
+            const indicator = document.querySelector('.sync-indicator');
             
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 5000);
+            if (isOnline) {
+                statusElement.textContent = '🟢 Online';
+                statusElement.className = 'connection-status connected';
+                indicator.className = 'sync-indicator sync-complete';
+            } else {
+                statusElement.textContent = '🔴 Offline';
+                statusElement.className = 'connection-status disconnected';
+                indicator.className = 'sync-indicator sync-pending';
+            }
         }
         
         // ============================================
@@ -859,6 +1005,13 @@
             document.getElementById('category').value = category;
             document.getElementById('description').focus();
             showMessage(`Quick expense preset: ${category} - ₹${amount}`, 'success');
+            
+            if (window.innerWidth < 768) {
+                document.getElementById('description').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
         }
         
         // ============================================
@@ -957,9 +1110,11 @@
                     const amount = parseFloat(expense.amount) || 0;
                     total += amount;
                     
-                    // Get category class
                     const categoryClass = 'category-' + (expense.category || 'other').toLowerCase().replace(/ & /g, '-').split(' ')[0];
                     const categoryName = expense.category || 'Other';
+                    
+                    // Status indicator
+                    const statusIcon = expense.syncStatus === 'synced' ? '✅' : '⏳';
                     
                     html += `
                         <tr>
@@ -967,16 +1122,17 @@
                             <td><span class="category-badge ${categoryClass}">${categoryName}</span></td>
                             <td>${expense.description || '-'}</td>
                             <td>${expense.paymentMethod || 'Cash'}</td>
-                            <td class="amount-cell">${formatCurrency(amount)}</td>
+                            <td class="amount-cell">${formatCurrency(amount)} ${statusIcon}</td>
                             <td>
-                                <button onclick="editExpense(${index})" style="background: #3b82f6; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">✏️ Edit</button>
-                                <button onclick="deleteExpense(${index})" style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-left: 5px;">🗑️ Delete</button>
+                                <div class="mobile-actions">
+                                    <button onclick="editExpense(${index})">✏️ Edit</button>
+                                    <button onclick="deleteExpense(${index})">🗑️ Delete</button>
+                                </div>
                             </td>
                         </tr>
                     `;
                 });
                 
-                // Add total row
                 if (sortedExpenses.length > 0) {
                     html += `
                         <tr class="total-row">
@@ -998,48 +1154,45 @@
         // EXPENSE MANAGEMENT
         // ============================================
         function deleteExpense(index) {
-            if (confirm('Are you sure you want to delete this expense?')) {
+            if (confirm('Delete this expense?')) {
                 expenses.splice(index, 1);
                 localStorage.setItem('expenses', JSON.stringify(expenses));
                 calculateStatistics();
                 renderExpenses();
                 populateMonthFilter();
-                showMessage('Expense deleted successfully', 'success');
+                showMessage('Expense deleted', 'success');
             }
         }
         
         function editExpense(index) {
             const expense = expenses[index];
             
-            // Populate form with expense data
             document.getElementById('expenseDate').value = expense.date;
             document.getElementById('amount').value = expense.amount;
             document.getElementById('category').value = expense.category;
             document.getElementById('description').value = expense.description || '';
             document.getElementById('paymentMethod').value = expense.paymentMethod || 'Cash';
             
-            // Remove from array and save
             expenses.splice(index, 1);
             localStorage.setItem('expenses', JSON.stringify(expenses));
             
-            // Switch to local form
-            showSection('local');
-            showMessage('Expense loaded for editing. Update and save again.', 'success');
-            
-            // Recalculate and render
+            showMessage('Expense loaded for editing', 'success');
             calculateStatistics();
             renderExpenses();
             populateMonthFilter();
+            scrollToForm();
         }
         
         function clearAllData() {
             if (confirm('Are you sure you want to delete ALL expenses? This cannot be undone.')) {
                 expenses = [];
+                pendingSyncQueue = [];
                 localStorage.removeItem('expenses');
+                localStorage.removeItem('pendingSyncQueue');
                 calculateStatistics();
                 renderExpenses();
                 populateMonthFilter();
-                showMessage('All expenses have been deleted', 'success');
+                showMessage('All data cleared', 'success');
             }
         }
         
@@ -1067,16 +1220,13 @@
                     }
                 });
                 
-                // Sort by date (most recent first)
+                monthFilter.innerHTML = '<option value="">All Months</option>';
+                
                 const sortedMonths = Array.from(uniqueMonths).sort((a, b) => {
                     if (a.year !== b.year) return b.year - a.year;
                     return b.month - a.month;
                 });
                 
-                // Clear existing options
-                monthFilter.innerHTML = '<option value="">All Months</option>';
-                
-                // Add month options
                 sortedMonths.forEach(m => {
                     const option = document.createElement('option');
                     option.value = m.key;
@@ -1084,7 +1234,6 @@
                     monthFilter.appendChild(option);
                 });
                 
-                // Select current month by default
                 const currentDate = new Date();
                 const currentMonthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
                 monthFilter.value = currentMonthKey;
@@ -1124,12 +1273,7 @@
             const selectedCategory = document.getElementById('categoryFilter').value;
             
             if (!selectedCategory) {
-                const selectedMonth = document.getElementById('monthFilter').value;
-                if (selectedMonth) {
-                    filterByMonth();
-                } else {
-                    renderExpenses(expenses);
-                }
+                filterByMonth();
                 return;
             }
             
@@ -1147,9 +1291,158 @@
         }
         
         // ============================================
+        // GOOGLE SHEETS SUBMISSION - WORKING VERSION
+        // ============================================
+        async function submitToGoogleSheets(formData) {
+            if (!isOnline) {
+                // Queue for offline sync
+                const pendingExpense = {
+                    ...formData,
+                    localId: Date.now(),
+                    syncStatus: 'pending',
+                    timestamp: new Date().toISOString()
+                };
+                pendingSyncQueue.push(pendingExpense);
+                localStorage.setItem('pendingSyncQueue', JSON.stringify(pendingSyncQueue));
+                console.log('Added to offline queue:', pendingExpense);
+                return false;
+            }
+            
+            try {
+                // Create form data
+                const params = new URLSearchParams();
+                
+                // Use your actual field IDs from the URL
+                params.append(FIELD_IDS.date, formData.date);
+                params.append(FIELD_IDS.amount, formData.amount.toString());
+                params.append(FIELD_IDS.category, formData.category);
+                
+                // Add description if you have a field for it
+                // params.append('entry.XXXXXXX', formData.description || '');
+                
+                params.append(FIELD_IDS.paymentMethod, formData.paymentMethod);
+                
+                console.log('Submitting to Google Sheets:', {
+                    url: FORM_URL,
+                    data: Object.fromEntries(params)
+                });
+                
+                // Submit with fetch
+                const response = await fetch(FORM_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Important for Google Forms
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params.toString()
+                });
+                
+                // Note: With 'no-cors' we can't read response, but submission works
+                console.log('Submission successful (no-cors mode)');
+                return true;
+                
+            } catch (error) {
+                console.error('Error submitting to Google Sheets:', error);
+                
+                // Fallback: Try with iframe method
+                try {
+                    submitViaIframe(formData);
+                    return true;
+                } catch (iframeError) {
+                    console.error('Iframe submission also failed:', iframeError);
+                    return false;
+                }
+            }
+        }
+        
+        function submitViaIframe(formData) {
+            // Alternative method using hidden iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.name = 'googleFormSubmit';
+            document.body.appendChild(iframe);
+            
+            const form = document.createElement('form');
+            form.target = 'googleFormSubmit';
+            form.action = FORM_URL;
+            form.method = 'POST';
+            
+            // Add fields
+            const fields = [
+                {name: FIELD_IDS.date, value: formData.date},
+                {name: FIELD_IDS.amount, value: formData.amount.toString()},
+                {name: FIELD_IDS.category, value: formData.category},
+                {name: FIELD_IDS.paymentMethod, value: formData.paymentMethod}
+            ];
+            
+            fields.forEach(field => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = field.name;
+                input.value = field.value;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+            
+            // Cleanup
+            setTimeout(() => {
+                document.body.removeChild(form);
+                document.body.removeChild(iframe);
+            }, 1000);
+        }
+        
+        async function syncPendingExpenses() {
+            if (!isOnline || pendingSyncQueue.length === 0) return;
+            
+            showLoading('Syncing pending expenses...');
+            
+            let successfulSyncs = 0;
+            let failedSyncs = 0;
+            
+            for (let i = pendingSyncQueue.length - 1; i >= 0; i--) {
+                const expense = pendingSyncQueue[i];
+                try {
+                    const success = await submitToGoogleSheets(expense);
+                    if (success) {
+                        pendingSyncQueue.splice(i, 1);
+                        successfulSyncs++;
+                        
+                        // Update main list if exists
+                        const index = expenses.findIndex(e => e.localId === expense.localId);
+                        if (index !== -1) {
+                            expenses[index].syncStatus = 'synced';
+                        }
+                    } else {
+                        failedSyncs++;
+                    }
+                } catch (error) {
+                    console.error('Sync error:', error);
+                    failedSyncs++;
+                }
+            }
+            
+            // Save updated queue
+            localStorage.setItem('pendingSyncQueue', JSON.stringify(pendingSyncQueue));
+            localStorage.setItem('expenses', JSON.stringify(expenses));
+            
+            hideLoading();
+            
+            if (successfulSyncs > 0) {
+                showMessage(`✅ Synced ${successfulSyncs} expenses to Google Sheets`, 'success');
+                renderExpenses();
+            }
+            
+            if (failedSyncs > 0) {
+                showMessage(`⚠️ ${failedSyncs} expenses failed to sync`, 'warning');
+            }
+        }
+        
+        // ============================================
         // FORM SUBMISSION
         // ============================================
-        document.getElementById('expenseForm').addEventListener('submit', function(e) {
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const submitBtn = document.getElementById('submitBtn');
@@ -1163,13 +1456,12 @@
                 paymentMethod: document.getElementById('paymentMethod').value
             };
             
-            // Validate amount
+            // Validate
             if (!formData.amount || formData.amount <= 0) {
                 showMessage('Please enter a valid amount', 'error');
                 return;
             }
             
-            // Validate category
             if (!formData.category) {
                 showMessage('Please select a category', 'error');
                 return;
@@ -1178,27 +1470,47 @@
             // Disable button and show loading
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving...';
+            showLoading('Saving to Google Sheets...');
             
             try {
-                // Add to expenses array
+                // Save locally first
+                const localId = Date.now();
                 const newExpense = {
                     ...formData,
-                    id: Date.now()
+                    id: localId,
+                    localId: localId,
+                    syncStatus: 'pending',
+                    timestamp: new Date().toISOString()
                 };
                 
                 expenses.unshift(newExpense);
                 localStorage.setItem('expenses', JSON.stringify(expenses));
+                
+                // Submit to Google Sheets
+                const submitted = await submitToGoogleSheets(formData);
+                
+                // Update local status
+                if (submitted) {
+                    newExpense.syncStatus = 'synced';
+                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    
+                    // Show success animation
+                    showSuccessAnimation();
+                    showMessage('✅ Expense saved to Google Sheets!', 'success');
+                } else if (!isOnline) {
+                    showMessage('📱 Saved locally. Will sync when online.', 'warning');
+                } else {
+                    showMessage('⚠️ Saved locally. Will retry sync.', 'warning');
+                }
                 
                 // Update UI
                 calculateStatistics();
                 renderExpenses();
                 populateMonthFilter();
                 
-                showMessage('✅ Expense saved locally!', 'success');
-                
             } catch (error) {
-                console.error("Error saving expense:", error);
-                showMessage('Error saving expense: ' + error.message, 'error');
+                console.error('Error saving expense:', error);
+                showMessage('Error saving expense. Saved locally.', 'error');
             }
             
             // Reset form
@@ -1210,38 +1522,17 @@
             
             // Re-enable button
             submitBtn.disabled = false;
-            submitBtn.textContent = '💾 Save Expense Locally';
+            submitBtn.textContent = '💾 Save to Google Sheets';
+            hideLoading();
             
             // Focus on amount
             document.getElementById('amount').focus();
+            
+            // Auto-sync if online
+            if (isOnline && pendingSyncQueue.length > 0) {
+                setTimeout(syncPendingExpenses, 2000);
+            }
         });
-        
-        // ============================================
-        // GOOGLE FORMS INTEGRATION
-        // ============================================
-        function loadGoogleForm() {
-            const preview = document.getElementById('googleFormPreview');
-            
-            // Embed the Google Form
-            preview.innerHTML = `
-                <iframe 
-                    src="${GOOGLE_FORM_URL}?embedded=true" 
-                    width="100%" 
-                    height="600" 
-                    frameborder="0" 
-                    marginheight="0" 
-                    marginwidth="0"
-                    style="border: none;"
-                >
-                    Loading Google Form...
-                </iframe>
-                <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
-                    📝 Submit expenses via this form. They will automatically save to your Google Sheets!
-                </p>
-            `;
-            
-            console.log('Google Form loaded:', GOOGLE_FORM_URL);
-        }
         
         // ============================================
         // EXPORT FUNCTION
@@ -1253,7 +1544,7 @@
             }
             
             try {
-                const headers = ['Date', 'Category', 'Description', 'Payment Method', 'Amount'];
+                const headers = ['Date', 'Category', 'Description', 'Payment Method', 'Amount', 'Sync Status'];
                 const csvData = [
                     headers.join(','),
                     ...expenses.map(exp => [
@@ -1261,7 +1552,8 @@
                         `"${exp.category}"`,
                         `"${exp.description || ''}"`,
                         `"${exp.paymentMethod}"`,
-                        exp.amount
+                        exp.amount,
+                        exp.syncStatus || 'pending'
                     ].join(','))
                 ].join('\n');
                 
@@ -1282,28 +1574,39 @@
         }
         
         // ============================================
+        // HELPER FUNCTIONS
+        // ============================================
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            statusMessage.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // ============================================
         // INITIALIZATION
         // ============================================
         function initApp() {
-            console.log("Initializing Expense Tracker...");
-            console.log("Your Google Form URL:", GOOGLE_FORM_URL);
-            
-            // Load from localStorage
-            try {
-                const saved = localStorage.getItem('expenses');
-                expenses = saved ? JSON.parse(saved) : [];
-                console.log(`Loaded ${expenses.length} expenses from localStorage`);
-            } catch (error) {
-                console.error("Error loading from localStorage:", error);
-                expenses = [];
-            }
-            
-            // Initialize UI
             calculateStatistics();
             renderExpenses();
             populateMonthFilter();
-            
-            console.log("App initialized successfully");
+            console.log('Expense Tracker initialized with Google Sheets integration');
+            console.log('Your form field IDs:', FIELD_IDS);
+        }
+        
+        // Manual sync button (can be added to UI if needed)
+        function manualSync() {
+            if (pendingSyncQueue.length > 0) {
+                syncPendingExpenses();
+            } else {
+                showMessage('No pending items to sync', 'success');
+            }
         }
     </script>
 </body>

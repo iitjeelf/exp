@@ -214,6 +214,16 @@
             display: block;
         }
         
+        .debug-info {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #666;
+            display: none;
+        }
+        
         .recent-expenses {
             margin-top: 35px;
             border-top: 1px solid #eee;
@@ -423,29 +433,18 @@
                 font-size: 1.3rem;
             }
         }
-        
-        /* Mobile optimizations */
-        input[type="date"] {
-            min-height: 50px;
-        }
-        
-        input[type="number"] {
-            font-size: 16px; /* Prevents iOS zoom */
-        }
-        
-        select {
-            padding-right: 40px;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            background-size: 16px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>💰 Monthly Expense Tracker</h1>
         <p class="subtitle">Track and analyze your monthly expenditures</p>
+        
+        <!-- Debug Panel -->
+        <div id="debugPanel" class="debug-info">
+            <strong>Debug Info:</strong>
+            <div id="debugContent"></div>
+        </div>
         
         <!-- Quick Actions -->
         <div class="quick-actions">
@@ -485,9 +484,14 @@
         <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin-bottom: 25px;">
             <div class="section-header">
                 <h3 style="margin: 0; color: #444;">Add New Expense</h3>
-                <button type="button" class="btn-load-data" id="loadFromSheetsBtn" onclick="loadFromGoogleSheets()">
-                    ↻ Load from Google Sheets
-                </button>
+                <div>
+                    <button type="button" class="btn-load-data" onclick="loadFromGoogleSheets()">
+                        ↻ Load Data
+                    </button>
+                    <button type="button" class="btn-load-data" onclick="testConnection()" style="background: #3b82f6; margin-left: 5px;">
+                        🔍 Test Connection
+                    </button>
+                </div>
             </div>
             
             <form id="expenseForm">
@@ -559,6 +563,7 @@
             
             <div id="statusMessage" class="status-message"></div>
             <div class="sync-status" id="syncStatus">
+                Connection: <span id="connectionStatus">Checking...</span> | 
                 Last sync: <span id="lastSyncTime">Never</span>
             </div>
         </div>
@@ -611,8 +616,9 @@
         // ============================================
         // CONFIGURATION
         // ============================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDw-XzUonZywhmHfU6Y0SPgtsG34sRIu-_2EecgQnfupzm8zbgVujeWtW-1hqDb1UHjQ/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz94mhb0ijb6QmaD9th-p3fMloSyL_oh1ae2L4I2iTDHEWBst0Xb9AhfG7yiTRGnPvg7A/exec";
         let expenses = [];
+        let isOnline = navigator.onLine;
         
         // ============================================
         // INITIALIZATION
@@ -623,12 +629,64 @@
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('expenseDate').value = today;
             
+            // Update connection status
+            updateConnectionStatus();
+            
+            // Listen for online/offline events
+            window.addEventListener('online', updateConnectionStatus);
+            window.addEventListener('offline', updateConnectionStatus);
+            
             // Initialize app
             initApp();
             
             // Test connection on startup
-            setTimeout(testConnection, 1000);
+            testConnection();
         });
+        
+        // ============================================
+        // CONNECTION FUNCTIONS
+        // ============================================
+        
+        function updateConnectionStatus() {
+            isOnline = navigator.onLine;
+            const statusElement = document.getElementById('connectionStatus');
+            
+            if (isOnline) {
+                statusElement.innerHTML = '<span style="color: #10b981;">🟢 Online</span>';
+            } else {
+                statusElement.innerHTML = '<span style="color: #ef4444;">🔴 Offline</span>';
+            }
+        }
+        
+        async function testConnection() {
+            showDebug("Testing connection to Google Sheets...");
+            
+            try {
+                showDebug("Sending GET request to: " + GOOGLE_SCRIPT_URL);
+                
+                const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getAll&limit=1');
+                showDebug("Response status: " + response.status);
+                
+                const result = await response.json();
+                showDebug("Response received: " + JSON.stringify(result, null, 2));
+                
+                if (result.success) {
+                    showMessage('✅ Connected to Google Sheets!', 'success');
+                    document.getElementById('connectionStatus').innerHTML = 
+                        '<span style="color: #10b981;">🟢 Connected</span>';
+                    return true;
+                } else {
+                    showMessage('⚠️ Google Sheets returned error: ' + result.error, 'error');
+                    return false;
+                }
+            } catch (error) {
+                showDebug("Connection error: " + error);
+                showMessage('❌ Cannot connect to Google Sheets: ' + error.message, 'error');
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<span style="color: #ef4444;">🔴 Connection Failed</span>';
+                return false;
+            }
+        }
         
         // ============================================
         // HELPER FUNCTIONS
@@ -908,38 +966,26 @@
         // GOOGLE SHEETS INTEGRATION
         // ============================================
         
-        async function testConnection() {
-            console.log('Testing connection to Google Sheets...');
-            try {
-                const response = await fetch(GOOGLE_SCRIPT_URL);
-                const result = await response.json();
-                console.log('Connection test result:', result);
-                if (result.success) {
-                    showMessage('✅ Connected to Google Sheets', 'success');
-                    setTimeout(() => {
-                        document.getElementById('statusMessage').style.display = 'none';
-                    }, 3000);
-                }
-                return true;
-            } catch (error) {
-                console.log('Connection test failed:', error);
-                showMessage('⚠️ Cannot connect to Google Sheets. Using local storage.', 'error');
-                return false;
-            }
-        }
-        
         async function loadFromGoogleSheets() {
-            const loadBtn = document.getElementById('loadFromSheetsBtn');
+            const loadBtn = document.querySelector('.btn-load-data');
             const originalText = loadBtn.textContent;
             loadBtn.disabled = true;
             loadBtn.textContent = 'Loading...';
             
             try {
+                showDebug("Loading data from Google Sheets...");
                 const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getAll');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
+                showDebug("Load response: " + JSON.stringify(result, null, 2));
                 
                 if (result.success) {
                     expenses = result.data || [];
+                    showDebug(`Loaded ${expenses.length} expenses from Google Sheets`);
                     
                     // Save to localStorage as backup
                     localStorage.setItem('expenses', JSON.stringify(expenses));
@@ -956,10 +1002,11 @@
                     
                     showMessage(`✅ Loaded ${expenses.length} expenses from Google Sheets`, 'success');
                 } else {
-                    showMessage('Error loading data: ' + result.message, 'error');
+                    showMessage('Error loading data: ' + (result.error || result.message), 'error');
                 }
             } catch (error) {
                 console.error('Error loading from Google Sheets:', error);
+                showDebug("Load error: " + error);
                 showMessage('Failed to load from Google Sheets. Using local data.', 'error');
                 
                 // Fallback to localStorage
@@ -1016,76 +1063,64 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Saving to Google Sheets...';
             
-            try {
-                // Send to Google Sheets
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const result = await response.json();
-                console.log('Save response:', result);
-                
-                if (result.success) {
-                    // Add to local expenses array
-                    const newExpense = {
-                        id: Date.now(),
-                        date: formData.date,
-                        amount: formData.amount,
-                        category: formData.category,
-                        description: formData.description,
-                        paymentMethod: formData.paymentMethod
-                    };
+            // Always save locally first
+            saveExpenseLocally(formData);
+            
+            // Try to save to Google Sheets if online
+            if (isOnline) {
+                try {
+                    showDebug("Sending to Google Sheets: " + JSON.stringify(formData));
                     
-                    expenses.unshift(newExpense);
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
                     
-                    // Save to localStorage
-                    localStorage.setItem('expenses', JSON.stringify(expenses));
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                     
-                    // Update UI
-                    calculateStatistics();
-                    renderExpenses();
-                    populateMonthFilter();
+                    const result = await response.json();
+                    showDebug("Save response: " + JSON.stringify(result, null, 2));
                     
-                    // Update sync time
-                    const now = new Date();
-                    document.getElementById('lastSyncTime').textContent = 
-                        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    if (result.success) {
+                        // Update sync time
+                        const now = new Date();
+                        document.getElementById('lastSyncTime').textContent = 
+                            now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        
+                        showMessage('✅ Expense saved to Google Sheets!', 'success');
+                    } else {
+                        showMessage('⚠️ Saved locally. Google Sheets error: ' + (result.error || result.message), 'error');
+                    }
                     
-                    // Show success message
-                    showMessage('✅ Expense saved to Google Sheets!', 'success');
-                    
-                    // Reset form (keep date as today)
-                    document.getElementById('amount').value = '';
-                    document.getElementById('description').value = '';
-                    document.getElementById('category').selectedIndex = 0;
-                    document.getElementById('paymentMethod').selectedIndex = 0;
-                    document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
-                    
-                } else {
-                    showMessage('❌ Error: ' + result.message, 'error');
-                    // Still save locally
-                    saveExpenseLocally(formData);
+                } catch (error) {
+                    console.error('Error saving to Google Sheets:', error);
+                    showDebug("Save error: " + error);
+                    showMessage('⚠️ Saved locally. Network error: ' + error.message, 'error');
                 }
-                
-            } catch (error) {
-                console.error('Error saving expense:', error);
-                showMessage('❌ Network error. Saving locally.', 'error');
-                // Save locally as fallback
-                saveExpenseLocally(formData);
-            } finally {
-                // Re-enable button
-                submitBtn.disabled = false;
-                submitBtn.textContent = '💾 Save Expense to Google Sheets';
-                
-                // Clear message after 5 seconds
-                setTimeout(() => {
-                    statusMessage.style.display = 'none';
-                }, 5000);
+            } else {
+                showMessage('📱 Saved locally (offline). Will sync when online.', 'success');
             }
+            
+            // Reset form (keep date as today)
+            document.getElementById('amount').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('category').selectedIndex = 0;
+            document.getElementById('paymentMethod').selectedIndex = 0;
+            document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+            
+            // Re-enable button
+            submitBtn.disabled = false;
+            submitBtn.textContent = '💾 Save Expense to Google Sheets';
+            
+            // Clear message after 5 seconds
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
         });
         
         function saveExpenseLocally(formData) {
@@ -1095,17 +1130,21 @@
                 amount: formData.amount,
                 category: formData.category,
                 description: formData.description,
-                paymentMethod: formData.paymentMethod
+                paymentMethod: formData.paymentMethod,
+                savedToCloud: false // Mark as not synced yet
             };
             
             expenses.unshift(newExpense);
-            localStorage.setItem('expenses', JSON.stringify(expenses));
             
+            // Save to localStorage
+            const allExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+            allExpenses.unshift(newExpense);
+            localStorage.setItem('expenses', JSON.stringify(allExpenses));
+            
+            // Update UI
             calculateStatistics();
             renderExpenses();
             populateMonthFilter();
-            
-            showMessage('✅ Saved locally (will sync when online)', 'success');
         }
         
         // ============================================
@@ -1120,6 +1159,18 @@
             console.log(type.toUpperCase() + ':', message);
         }
         
+        function showDebug(message) {
+            console.log('DEBUG:', message);
+            const debugPanel = document.getElementById('debugPanel');
+            const debugContent = document.getElementById('debugContent');
+            
+            debugContent.innerHTML += '<div>' + message + '</div>';
+            debugPanel.style.display = 'block';
+            
+            // Auto-scroll to bottom
+            debugContent.scrollTop = debugContent.scrollHeight;
+        }
+        
         // ============================================
         // INITIALIZATION
         // ============================================
@@ -1127,18 +1178,18 @@
         function initApp() {
             console.log('Initializing Expense Tracker...');
             
-            // Check connection
-            if (GOOGLE_SCRIPT_URL.includes("AKfycbz94mhb0ijb6QmaD9th-p3fMloSyL_oh1ae2L4I2iTDHEWBst0Xb9AhfG7yiTRGnPvg7A")) {
-                console.log('Google Script URL detected');
-            } else {
-                showMessage('⚠️ Using default Google Script URL', 'error');
-            }
-            
             // Load from localStorage first
             try {
                 const saved = localStorage.getItem('expenses');
                 expenses = saved ? JSON.parse(saved) : [];
                 console.log('Loaded', expenses.length, 'expenses from localStorage');
+                
+                // Mark any unsynced expenses
+                expenses.forEach(expense => {
+                    if (!expense.savedToCloud) {
+                        expense.savedToCloud = false;
+                    }
+                });
             } catch (error) {
                 console.error('Error loading from localStorage:', error);
                 expenses = [];
@@ -1155,7 +1206,8 @@
                         amount: 500,
                         category: "Food & Dining",
                         description: "Lunch",
-                        paymentMethod: "Cash"
+                        paymentMethod: "Cash",
+                        savedToCloud: true
                     },
                     {
                         id: 2,
@@ -1163,7 +1215,8 @@
                         amount: 1200,
                         category: "Transportation",
                         description: "Fuel",
-                        paymentMethod: "UPI"
+                        paymentMethod: "UPI",
+                        savedToCloud: true
                     }
                 ];
                 localStorage.setItem('expenses', JSON.stringify(expenses));
